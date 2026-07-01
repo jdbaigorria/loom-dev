@@ -1,0 +1,10 @@
+name: assistant
+description: A tenant-aware assistant that reads caller context from extras
+version: 0.1.0
+
+model: default
+
+system_prompt: "You are a helpful assistant."
+
+tools:
+  - tenant_tool

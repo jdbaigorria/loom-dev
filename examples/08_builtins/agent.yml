@@ -1,0 +1,55 @@
+name: support
+description: Support agent wired with Loom's built-in knowledge-base and HTTP tools
+version: 0.1.0
+
+model: default
+
+system_prompt: >
+  You are a support agent. Use kb_search to look up internal documentation, and
+  the weather_api / billing_api tools to fetch live data when the user asks.
+
+tools:
+  # Built-in multi-KB search. One tool fans out across every kb_id and merges
+  # results by score. The model may target a single KB via the kb_id argument.
+  - builtin.kb:
+      kb_ids: [docs, tickets]
+      top_k: 5
+      region: us-east-1
+      score_threshold: 0.7
+
+  # Built-in generic HTTP tool. `name` is the Strands tool name — required so
+  # several apicall instances can coexist without a name collision.
+  - builtin.apicall:
+      name: weather_api
+      base_url: https://api.weather.example.com
+      allowed_paths: ["/v1/*"]
+      # Inject the token from the environment; falls back to a demo value so the
+      # example loads even when WEATHER_TOKEN is unset.
+      headers:
+        Authorization: "Bearer ${oc.env:WEATHER_TOKEN,demo-token}"
+
+  - builtin.apicall:
+      name: billing_api
+      base_url: https://api.billing.example.com
+      allowed_paths: ["/invoices/*", "/customers/*"]
+
+  # Built-in HTTP tool in *domain mode* (recommended). `bind` is a fixed request
+  # template the model never sees; `expose` becomes the model-facing schema. The
+  # model calls get_invoice(invoice_id) — it never builds a path, so it cannot
+  # mis-format one. `{invoice_id}` is URL-encoded and injected by the framework.
+  - builtin.apicall:
+      name: get_invoice
+      description: Fetch a single invoice by its id.
+      bind:
+        base_url: https://api.billing.example.com
+        path: /invoices/{invoice_id}
+        method: GET
+        # `select` keeps only these fields of the response — the rest never
+        # reaches the model's context (vital for chatty APIs whose payloads
+        # would otherwise overflow the context window).
+        select: [id, status, total, currency, due_date]
+      expose:
+        invoice_id:
+          type: string
+          required: true
+          description: "The invoice id, e.g. 'INV-2026-001'."

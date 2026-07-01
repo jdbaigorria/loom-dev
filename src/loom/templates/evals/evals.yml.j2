@@ -1,0 +1,40 @@
+# Evaluation definition for agent: {{ name }}
+# Run with: loom evals run {{ name }}
+
+cases:
+  # --- Output cases ---
+  - name: capital-argentina
+    input: "¿Cuál es la capital de Argentina?"
+    expected_output: "Buenos Aires"
+    metadata:
+      category: knowledge
+      difficulty: easy
+
+  - name: saludo
+    input: "Hola, necesito ayuda"
+    expected_output: "Un saludo cordial ofreciendo asistencia"
+    metadata:
+      category: conversation
+      difficulty: easy
+
+  - name: tramite
+    input: "¿Cómo realizo un trámite?"
+    expected_output: "Instrucciones paso a paso para realizar un trámite"
+    metadata:
+      category: tramites
+      difficulty: medium
+
+
+evaluators:
+  - type: output
+    rubric: |
+      Evaluar la respuesta en base a:
+      1. Precisión - ¿La información es correcta?
+      2. Completitud - ¿Responde la pregunta completa?
+      3. Tono - ¿Usa registro rioplatense cordial?
+      4. Fuentes - ¿No inventa datos de contacto?
+
+      Score 1.0 si cumple todos los criterios.
+      Score 0.5 si cumple parcialmente.
+      Score 0.0 si la respuesta es incorrecta o alucina datos.
+    include_inputs: true

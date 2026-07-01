@@ -1,0 +1,8 @@
+[project]
+name = "{{ app.project_name | default('loom-project') }}"
+version = "0.1.0"
+description = "{{ app.project_description | default('A project for the Loom framework') }}"
+
+
+[workspace]
+name = "{{ app.workspace_name | default('warp') }}"

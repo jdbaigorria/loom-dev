@@ -1,0 +1,24 @@
+# Opinionated presets, referenced by name from agent/app YAML (model:, retry:,
+# conversation:). Loom ships built-ins (model: default/economic/powerful,
+# retry: low/medium/high, conversation: none/sliding/summarize). Anything you
+# define here overrides or extends them.
+#
+# Example — add a model profile, then use `model: fast` in an agent:
+#
+# [model.fast]
+# import_path = "strands.models.bedrock.BedrockModel"
+# params = { model_id = "anthropic.claude-3-5-haiku-20241022-v1:0" }
+#
+# Example — tighter retry, then `retry: aggressive` in an agent:
+#
+# [retry.aggressive]
+# max_attempts = 6
+# initial_delay = 2
+# max_delay = 120
+#
+# Example — provider aliases for inline models. Loom ships built-ins (bedrock,
+# openai, anthropic, gemini, litellm, ollama, mistral, ...). Add your own here,
+# then use `provider: my_provider` in an inline model config:
+#
+# [providers]
+# my_provider = "my.pkg.CustomModel"

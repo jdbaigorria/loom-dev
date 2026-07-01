@@ -1,0 +1,54 @@
+name: Release
+
+# Distribution is via GitHub: users install with
+#   uv tool install "loom-declarative[cli] @ git+https://github.com/jdbaigorria/loom-dev@vX.Y.Z"
+#   pip install "loom-declarative[cli] @ git+https://github.com/jdbaigorria/loom-dev@vX.Y.Z"
+# This workflow builds the artifacts, smoke-tests the wheel, and attaches them to
+# a GitHub Release. It does NOT publish to PyPI — re-add a publish step (and the
+# id-token permission) if a PyPI name is registered later.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Build package
+        run: uv build
+
+      - name: Smoke-test the wheel
+        # Refuses to release a wheel whose `loom init` produces an empty project.
+        run: |
+          uv venv /tmp/loom-smoke
+          uv pip install --python /tmp/loom-smoke/bin/python "$(echo dist/*.whl)[cli]"
+          work=$(mktemp -d)
+          cd "$work"
+          /tmp/loom-smoke/bin/loom init -f
+          test -f loom.toml && test -f warp/config/app.yml \
+            || { echo "::error::release wheel is broken: loom init scaffolds nothing"; exit 1; }
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: dist/*

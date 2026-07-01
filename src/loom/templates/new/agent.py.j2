@@ -1,0 +1,7 @@
+from loom.core import build_agent
+from loom.schemas.context import LoomSession
+
+name = "{{ agent.name }}"
+session = LoomSession(user_id="default-user", session_id="default-session")
+
+agent = build_agent(name, session)

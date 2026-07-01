@@ -1,0 +1,30 @@
+name: {{agent.name}}
+description: {{agent.description}}
+version: 0.1.0
+
+{% if agent.model is string %}
+model: {{agent.model}}
+{% else %}
+model:
+  import_path: {{agent.model.import_path}}
+  params:
+{% for key, value in agent.model.params.items() %}
+    {{key}}: {{value}}
+{% endfor %}
+{% endif %}
+
+system_prompt:
+  prompt: {{agent.system_prompt.prompt}}
+
+{% if agent.retry is string %}
+retry: {{agent.retry}}
+{% else %}
+retry:
+  max_attempts: {{agent.retry.max_attempts}}
+  initial_delay: {{agent.retry.initial_delay}}
+  max_delay: {{agent.retry.max_delay}}
+{% endif %}
+
+{% if agent.output %}
+output: {{agent.output}}
+{% endif %}

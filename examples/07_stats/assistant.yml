@@ -1,0 +1,7 @@
+name: assistant
+description: A helpful assistant
+version: 0.1.0
+
+model: default
+
+system_prompt: "You are a helpful assistant."

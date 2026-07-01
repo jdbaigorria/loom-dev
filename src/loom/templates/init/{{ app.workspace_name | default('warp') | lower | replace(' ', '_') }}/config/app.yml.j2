@@ -1,0 +1,63 @@
+region: {{ app.region }}
+log_level: {{ app.log_level }}
+
+{% if app.session is defined and app.session %}
+{% if app.session.provider == "file" %}
+session:
+  provider: file
+  config:
+    path: {{ app.session.config.path }}
+{% elif app.session.provider == "s3" %}
+session:
+  provider: s3
+  config:
+    bucket: {{ app.session.config.bucket }}
+    prefix: {{ app.session.config.prefix }}
+{% endif %}
+{% else %}
+# Optional: persist conversation history. Off by default — a factory should not
+# silently write state, and a harness (e.g. Weave) may own history instead.
+# Uncomment to enable file-backed sessions for standalone use:
+# session:
+#   provider: file
+#   config:
+#     path: .loom/sessions
+{% endif %}
+
+{% if app.conversation and app.conversation is not string and app.conversation.strategy != "null" %}
+{% if app.conversation.strategy == "sliding_window" %}
+conversation:
+  strategy: sliding_window
+  config:
+    window_size: {{ app.conversation.config.window_size }}
+    should_truncate_results: {{ app.conversation.config.should_truncate_results }}
+    per_turn: {{ app.conversation.config.per_turn }}
+{% elif app.conversation.strategy == "summarizing" %}
+conversation:
+  strategy: summarizing
+  config:
+    summary_ratio: {{ app.conversation.config.summary_ratio }}
+    preserve_recent_messages: {{ app.conversation.config.preserve_recent_messages }}
+    {% if app.conversation.config.summarization_system_prompt %}
+    summarization_system_prompt: {{ app.conversation.config.summarization_system_prompt }}
+    {% elif app.conversation.config.summarization_agent %}
+    summarization_agent:
+      model_id: {{ app.conversation.config.summarization_agent.model_id }}
+      temperature: {{ app.conversation.config.summarization_agent.temperature }}
+      max_tokens: {{ app.conversation.config.summarization_agent.max_tokens }}
+    {% endif %}
+{% endif %}
+{% endif %}
+
+# Optional: export the OpenTelemetry traces/metrics Strands already emits.
+# OTLP endpoint and headers come from OTEL_EXPORTER_OTLP_* env vars.
+# telemetry:
+#   enabled: true
+#   exporter: otlp        # or: console
+#   metrics: false
+#   service_name: my-agents
+
+# Optional: shared defaults merged into every agent config (model, retry, etc.).
+# defaults:
+#   model: default
+#   retry: low

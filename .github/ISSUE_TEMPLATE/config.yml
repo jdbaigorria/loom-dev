@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions & Discussions
+    url: https://github.com/your-org/loom/discussions
+    about: For general questions, usage help, and ideas that are not yet bug reports or feature requests.

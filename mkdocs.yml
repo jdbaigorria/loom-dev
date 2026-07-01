@@ -1,0 +1,86 @@
+site_name: Loom
+site_description: Declarative AI agent framework built on Strands Agents
+site_url: https://jdbaigorria.github.io/loom-dev
+repo_url: https://github.com/jdbaigorria/loom-dev
+repo_name: jdbaigorria/loom-dev
+edit_uri: edit/dev/docs/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+  icon:
+    repo: fontawesome/brands/github
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Quickstart: quickstart.md
+  - Guides:
+      - Creating agents: guides/agents.md
+      - Models & providers: guides/models.md
+      - Prompts: guides/prompts.md
+      - Tools: guides/tools.md
+      - Hooks: guides/hooks.md
+      - Sessions: guides/sessions.md
+      - Conversation management: guides/conversations.md
+      - Multi-agent workflows: guides/workflows.md
+      - Evaluations: guides/evals.md
+      - Observability: guides/observability.md
+      - Dev loop: guides/dev-loop.md
+  - Reference:
+      - CLI: reference/cli.md
+      - Python API: reference/python-api.md
+      - Agent YAML: reference/agent-yaml.md
+      - App YAML: reference/app-yaml.md
+      - profiles.toml: reference/profiles-toml.md
+  - Contributing: contributing.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.snippets
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+  - tables
+  - footnotes
+
+plugins:
+  - search
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/jdbaigorria/loom-dev

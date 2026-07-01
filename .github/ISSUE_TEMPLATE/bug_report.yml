@@ -1,0 +1,77 @@
+name: Bug Report
+description: Something is broken or behaving unexpectedly
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill in as much detail as possible.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps or code snippet to reproduce the issue.
+      placeholder: |
+        1. Run `loom agent new foo`
+        2. Edit `warp/agents/foo/config/foo.yml` to set ...
+        3. Run `loom agent run foo -m "hello"`
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: What actually happened? Include the full traceback if applicable.
+      render: text
+    validations:
+      required: true
+
+  - type: input
+    id: loom_version
+    attributes:
+      label: LOOM version
+      description: Output of `loom version`
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: python_version
+    attributes:
+      label: Python version
+      placeholder: "3.14.0"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "macOS 15.3 / Ubuntu 24.04 / Windows 11"
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
+      description: Anything else that might be relevant (agent YAML excerpt, app.yml excerpt, etc.)
