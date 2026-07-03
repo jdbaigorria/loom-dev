@@ -359,12 +359,12 @@ class TestBuildEngine:
     @pytest.fixture
     def engine_env(self, mocker, monkeypatch, tmp_path):
         monkeypatch.setenv("LOOM_ROOT", str(tmp_path))
-        mocker.patch("loom.core.builder.get_model", return_value=mocker.Mock())
+        get_model = mocker.patch("loom.core.builder.get_model", return_value=mocker.Mock())
         mocker.patch("loom.core.builder.get_prompt", return_value="system prompt")
         mocker.patch("loom.core.builder.get_retry_strategy", return_value=mocker.Mock())
         get_tools = mocker.patch("loom.core.builder.get_tools", return_value=[])
         mock_agent_cls = mocker.patch("loom.core.builder.Agent")
-        return {"get_tools": get_tools, "mock_agent_cls": mock_agent_cls}
+        return {"get_model": get_model, "get_tools": get_tools, "mock_agent_cls": mock_agent_cls}
 
     def test_build_usa_config_resuelto_sin_source(self, engine_env):
         """build() recibe un AgentConfig ya resuelto; no necesita ConfigSource."""
@@ -380,6 +380,23 @@ class TestBuildEngine:
         )
 
         assert engine_env["mock_agent_cls"].call_args.kwargs["name"] == "eng"
+
+    def test_model_params_se_pasan_a_get_model_como_overlay(self, engine_env):
+        """build(model_params=...) reenvía el overlay per-run a get_model (2do arg)."""
+        from loom.core.builder import build
+        from loom.schemas.config.agent import AgentConfig
+        from loom.schemas.config.app import AppConfig
+
+        overlay = {"boto_session": object()}
+        cfg = AgentConfig(name="eng", description="d", model="default")
+        build(
+            cfg,
+            LoomSession(user_id="u", session_id="s"),
+            app_config=AppConfig(session=None, conversation=None),
+            model_params=overlay,
+        )
+
+        engine_env["get_model"].assert_called_once_with("default", overlay)
 
     def test_tools_subset_se_pasa_a_get_tools(self, engine_env):
         from loom.core.builder import build

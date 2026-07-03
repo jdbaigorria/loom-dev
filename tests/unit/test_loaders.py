@@ -968,6 +968,49 @@ class TestModelLoader:
         with pytest.raises(ModelLoadError, match="Unknown model provider"):
             resolve_import_path(config)
 
+    def test_overlay_se_mergea_sobre_los_params_del_config(self, mocker):
+        """LDR-34: overlay per-run se suma a los params declarativos del config"""
+        from loom.core.loaders.model import _build_custom_model
+        from loom.schemas.config.models import CustomModelConfig
+
+        fake_cls = mocker.Mock(return_value="model-instance")
+        mocker.patch("loom.adapters.strands.resolve", return_value=fake_cls)
+
+        # Un centinela cualquiera (imita un boto3.Session vivo): el overlay pasa
+        # objetos tal cual, sin serializar.
+        session_sentinel = object()
+        config = CustomModelConfig(import_path="my.pkg.MyModel", params={"model_id": "x"})
+        result = _build_custom_model(config, {"boto_session": session_sentinel})
+
+        fake_cls.assert_called_once_with(model_id="x", boto_session=session_sentinel)
+        assert result == "model-instance"
+
+    def test_overlay_pisa_una_key_de_la_base(self, mocker):
+        """LDR-35: ante la misma key, el overlay per-run gana sobre el config"""
+        from loom.core.loaders.model import _build_custom_model
+        from loom.schemas.config.models import CustomModelConfig
+
+        fake_cls = mocker.Mock(return_value="model-instance")
+        mocker.patch("loom.adapters.strands.resolve", return_value=fake_cls)
+
+        config = CustomModelConfig(import_path="my.pkg.MyModel", params={"model_id": "base"})
+        _build_custom_model(config, {"model_id": "override"})
+
+        fake_cls.assert_called_once_with(model_id="override")
+
+    def test_overlay_none_deja_los_params_intactos(self, mocker):
+        """LDR-36: sin overlay (None) el constructor recibe solo los params del config"""
+        from loom.core.loaders.model import _build_custom_model
+        from loom.schemas.config.models import CustomModelConfig
+
+        fake_cls = mocker.Mock(return_value="model-instance")
+        mocker.patch("loom.adapters.strands.resolve", return_value=fake_cls)
+
+        config = CustomModelConfig(import_path="my.pkg.MyModel", params={"model_id": "x"})
+        _build_custom_model(config, None)
+
+        fake_cls.assert_called_once_with(model_id="x")
+
 
 # ---------------------------------------------------------------------------
 # loaders.hook.get_hooks() (GAP-01A)
