@@ -18,5 +18,6 @@ site/
 .pytest_cache/
 .loom/
 .cursor/
+.aidocs/
 CLAUDE.md
 AUDIT.md
