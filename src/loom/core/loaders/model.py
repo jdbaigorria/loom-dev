@@ -6,9 +6,16 @@ inline ``CustomModelConfig`` passthrough. Either way it ends up as a dotted
 ``import_path`` + ``params``, resolved through the ACL — so any Strands ``Model``
 (Bedrock, OpenAI, Gemini, LiteLLM, Ollama) or a custom subclass works with one code
 path, and Loom maintains no per-provider schema.
+
+A caller may also supply a per-run ``overlay`` of constructor params, merged on top
+of the declarative ``params``. This is the build-time sibling of ``extras`` /
+``invocation_state``: config stays declarative and cacheable, while secrets and other
+per-run values (e.g. a Bedrock ``boto_session`` carrying credentials) are injected by
+the caller without touching the ``ConfigSource``.
 """
 
 import logging
+from typing import Any
 
 from loom.adapters import strands as sx
 from loom.adapters.strands import Model
@@ -58,8 +65,12 @@ def resolve_import_path(config: CustomModelConfig) -> str:
     return path
 
 
-def _build_custom_model(config: CustomModelConfig) -> Model:
-    """Build any Strands ``Model`` by resolving its class through the ACL."""
+def _build_custom_model(config: CustomModelConfig, overlay: dict[str, Any] | None = None) -> Model:
+    """Build any Strands ``Model`` by resolving its class through the ACL.
+
+    ``overlay`` (per-run constructor params) is merged on top of the config's
+    declarative ``params`` — later keys win — and passed to the model constructor.
+    """
     import_path = resolve_import_path(config)
     cls = sx.resolve(import_path, optional=True)
     if cls is None:
@@ -71,14 +82,22 @@ def _build_custom_model(config: CustomModelConfig) -> Model:
                 "(pip install 'strands-agents[openai]')."
             ),
         )
-    return cls(**config.build_model())
+    params = config.build_model()
+    if overlay:
+        params = {**params, **overlay}
+    # Never log ``params``/``overlay`` — the overlay may carry credentials.
+    return cls(**params)
 
 
-def get_model(model: ModelConfig) -> Model:
+def get_model(model: ModelConfig, overlay: dict[str, Any] | None = None) -> Model:
     """Instantiate the configured model (profile name or inline passthrough).
 
     Args:
         model: A profile name or an inline ``CustomModelConfig``.
+        overlay: Optional per-run constructor params merged on top of the config's
+            declarative ``params`` (later keys win). The place to inject per-run
+            secrets — e.g. ``{"boto_session": boto3.Session(...)}`` for Bedrock —
+            without persisting them in the ``ConfigSource``.
 
     Returns:
         A ``strands.models.Model`` instance ready for use with ``strands.Agent``.
@@ -93,6 +112,6 @@ def get_model(model: ModelConfig) -> Model:
         config.import_path,
         config.model_id,
     )
-    instance = _build_custom_model(config)
+    instance = _build_custom_model(config, overlay)
     logger.info("Model loaded: %s", config.import_path or config.provider)
     return instance

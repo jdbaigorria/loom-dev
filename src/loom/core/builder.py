@@ -25,6 +25,7 @@ Construction flow::
 """
 
 import logging
+from typing import Any
 
 from loom.adapters import strands as sx
 from loom.adapters.config import FileConfigSource
@@ -85,6 +86,7 @@ def build(
     app_config: AppConfig | None = None,
     tools: list[str] | None = None,
     paths: WorkspacePaths | None = None,
+    model_params: dict[str, Any] | None = None,
 ) -> Agent:
     """Assemble a ``strands.Agent`` from a *resolved* ``AgentConfig``.
 
@@ -108,6 +110,10 @@ def build(
             (e.g. a document-DB source): the config must then be fully hydrated
             and reference code by dotted path (``module:fn``), otherwise the
             relevant loader raises.
+        model_params: Optional per-run overlay merged on top of the model's
+            declarative constructor params (see :func:`loom.core.loaders.model.get_model`).
+            The build-time channel for per-run secrets — e.g. a Bedrock
+            ``boto_session`` — that must not live in the ``ConfigSource``.
 
     Returns:
         A configured ``strands.Agent`` ready to receive messages.
@@ -146,7 +152,7 @@ def build(
     # Params shared by both kinds. Bidi reuses every loader except the model
     # (a BidiModel) and omits conversation/structured-output/retry.
     shared_params = {
-        "model": get_model(agent_config.model) if agent_config.model else None,
+        "model": get_model(agent_config.model, model_params) if agent_config.model else None,
         "system_prompt": get_prompt(agent_config.system_prompt, base_path=config_dir)
         if agent_config.system_prompt
         else None,
@@ -220,6 +226,7 @@ def build_agent(
     *,
     source: ConfigSource | None = None,
     tools: list[str] | None = None,
+    model_params: dict[str, Any] | None = None,
 ) -> Agent:
     """Build a ``strands.Agent`` by name, fetching config from a ``ConfigSource``.
 
@@ -238,6 +245,9 @@ def build_agent(
             to decouple from disk.
         tools: Optional per-call subset of the declared tool catalog (see
             :func:`build`).
+        model_params: Optional per-run overlay of model constructor params (see
+            :func:`build`). Used to inject per-run secrets (e.g. a Bedrock
+            ``boto_session``) without persisting them in the ``ConfigSource``.
 
     Returns:
         A configured ``strands.Agent`` ready to receive messages.
@@ -260,4 +270,6 @@ def build_agent(
     # reference code by dotted path.
     paths = src.workspace if isinstance(src, FileConfigSource) else None
 
-    return build(agent_config, session, app_config=app_config, tools=tools, paths=paths)
+    return build(
+        agent_config, session, app_config=app_config, tools=tools, paths=paths, model_params=model_params
+    )
