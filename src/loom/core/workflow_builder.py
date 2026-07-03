@@ -13,6 +13,7 @@ Construction flow::
 """
 
 import logging
+from typing import Any
 
 from loom.adapters import strands as sx
 from loom.adapters.config import FileConfigSource
@@ -33,6 +34,7 @@ def build_workflow(
     env: str | None = None,
     *,
     source: ConfigSource | None = None,
+    model_params: dict[str, Any] | None = None,
 ):
     """Build a Strands multi-agent object (``Graph`` or ``Swarm``) by name.
 
@@ -45,6 +47,10 @@ def build_workflow(
             :class:`~loom.adapters.config.FileConfigSource`; the same source is
             threaded to every node's :func:`build_agent`, so a non-filesystem
             deployment serves the whole workflow without touching disk.
+        model_params: Optional per-run overlay of model constructor params, applied
+            to *every* node's model (see :func:`loom.core.builder.build_agent`). The
+            channel for per-run secrets — e.g. one Bedrock ``boto_session`` shared by
+            all nodes of a run.
 
     Returns:
         A tuple ``(workflow, node_agents)`` where ``workflow`` is a Strands
@@ -64,12 +70,16 @@ def build_workflow(
     logger.info("Building workflow '%s' (type=%s, env=%s)", name, config.type, active_env)
 
     if isinstance(config, GraphWorkflowConfig):
-        return _build_graph(config, session, active_env, src)
-    return _build_swarm(config, session, active_env, src)
+        return _build_graph(config, session, active_env, src, model_params)
+    return _build_swarm(config, session, active_env, src, model_params)
 
 
 def _build_graph(
-    config: GraphWorkflowConfig, session: LoomSession, env: str, source: ConfigSource
+    config: GraphWorkflowConfig,
+    session: LoomSession,
+    env: str,
+    source: ConfigSource,
+    model_params: dict[str, Any] | None = None,
 ):
     """Assemble a Strands ``Graph`` from a graph workflow config."""
     if sx.GraphBuilder is None:
@@ -81,7 +91,7 @@ def _build_graph(
     builder = sx.GraphBuilder()
     built_agents: list = []
     for node_id, node in config.nodes.items():
-        agent = build_agent(node.agent, session, env, source=source)
+        agent = build_agent(node.agent, session, env, source=source, model_params=model_params)
         built_agents.append(agent)
         builder.add_node(agent, node_id)
 
@@ -100,7 +110,11 @@ def _build_graph(
 
 
 def _build_swarm(
-    config: SwarmWorkflowConfig, session: LoomSession, env: str, source: ConfigSource
+    config: SwarmWorkflowConfig,
+    session: LoomSession,
+    env: str,
+    source: ConfigSource,
+    model_params: dict[str, Any] | None = None,
 ):
     """Assemble a Strands ``Swarm`` from a swarm workflow config."""
     if sx.Swarm is None:
@@ -111,7 +125,7 @@ def _build_swarm(
 
     # dict.fromkeys preserves order and de-duplicates agent names.
     agents = {
-        agent_name: build_agent(agent_name, session, env, source=source)
+        agent_name: build_agent(agent_name, session, env, source=source, model_params=model_params)
         for agent_name in dict.fromkeys(config.agents)
     }
     entry = agents[config.entry_point] if config.entry_point is not None else None

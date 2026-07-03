@@ -31,7 +31,7 @@ def _agent(name: str) -> Agent:
     )
 
 
-def _fake_build_agent(agent_name, session, env, *, source=None):
+def _fake_build_agent(agent_name, session, env, *, source=None, model_params=None):
     return _agent(agent_name)
 
 
@@ -148,7 +148,7 @@ class TestWorkflowBuilder:
 
         seen_sources = []
 
-        def _record(agent_name, sess, env, *, source=None):
+        def _record(agent_name, sess, env, *, source=None, model_params=None):
             seen_sources.append(source)
             return _agent(agent_name)
 
@@ -157,6 +157,26 @@ class TestWorkflowBuilder:
 
         source.get_workflow_config.assert_called_once_with("team")
         assert seen_sources == [source, source]  # one per node, the injected one
+
+    def test_model_params_are_threaded_to_every_node(self, session):
+        """A single per-run overlay reaches every node's build_agent (same run creds)."""
+        import loom.core.workflow_builder as wb
+
+        cfg = SwarmWorkflowConfig(name="team", agents=["r", "w"], entry_point="r")
+        source = MagicMock()
+        source.get_workflow_config.return_value = cfg
+        overlay = {"boto_session": object()}
+
+        seen_overlays = []
+
+        def _record(agent_name, sess, env, *, source=None, model_params=None):
+            seen_overlays.append(model_params)
+            return _agent(agent_name)
+
+        with patch.object(wb, "build_agent", _record):
+            wb.build_workflow("team", session, "dev", source=source, model_params=overlay)
+
+        assert seen_overlays == [overlay, overlay]  # one per node, the same overlay
 
 
 # ---------------------------------------------------------------------------
