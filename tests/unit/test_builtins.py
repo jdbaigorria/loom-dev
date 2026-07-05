@@ -159,10 +159,10 @@ class TestApiCallDomain:
                 "path": "/tickets",
                 "method": "POST",
                 "query": {"trace": "{trace}"},
-                "body": {"dni": "{dni}", "priority": "{priority}"},
+                "body": {"id": "{id}", "priority": "{priority}"},
             },
             expose={
-                "dni": {"type": "string", "required": True, "description": "DNI."},
+                "id": {"type": "string", "required": True, "description": "Employee ID."},
                 "priority": {"type": "string", "default": "normal", "description": "Prio."},
                 "trace": {"type": "string", "required": True, "description": "Trace id."},
             },
@@ -171,9 +171,9 @@ class TestApiCallDomain:
         resp.json.return_value = {"id": 1}
         resp.raise_for_status.return_value = None
         with patch("requests.Session.request", return_value=resp) as mock_req:
-            tool(dni="123", trace="t1")  # priority omitido → usa default
+            tool(id="123", trace="t1")  # priority omitido → usa default
         kw = mock_req.call_args.kwargs
-        assert kw["json"] == {"dni": "123", "priority": "normal"}
+        assert kw["json"] == {"id": "123", "priority": "normal"}
         assert kw["params"] == {"trace": "t1"}
 
     def test_whole_placeholder_preserva_el_tipo(self):

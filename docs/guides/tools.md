@@ -166,7 +166,7 @@ Placeholders can appear in `path`, `query`, `body` and `headers`. A whole-string
 ```yaml
   - builtin.apicall:
       name: create_ticket
-      description: Open a support ticket for a citizen.
+      description: Open a support ticket for an employee.
       bind:
         base_url: https://api.example-gov.example
         path: /tickets
@@ -174,11 +174,11 @@ Placeholders can appear in `path`, `query`, `body` and `headers`. A whole-string
         static_headers:                      # sent verbatim (not templated)
           Authorization: "Bearer ${oc.env:TICKETS_API_TOKEN}"
         body:
-          dni: "{dni}"
+          id: "{id}"
           subject: "{subject}"
           priority: "{priority}"
       expose:
-        dni:      { type: string, required: true,  description: "Citizen document number." }
+        id:       { type: string, required: true,  description: "Employee ID." }
         subject:  { type: string, required: true,  description: "Short ticket title." }
         priority: { type: string, default: "normal", enum: ["low", "normal", "high"],
                     description: "Ticket priority." }
