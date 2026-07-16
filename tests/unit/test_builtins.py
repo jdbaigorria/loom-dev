@@ -507,6 +507,20 @@ class TestKb:
         with pytest.raises(ValueError, match="kb_ids"):
             make_kb(kb_ids=[])
 
+    def test_boto_session_none_usa_boto3_client_ambiente(self):
+        """Sin boto_session, arma el cliente con la cadena de credenciales default."""
+        with patch("boto3.client") as client_cls:
+            make_kb(kb_ids=["docs"], region="us-east-1")
+        client_cls.assert_called_once_with("bedrock-agent-runtime", region_name="us-east-1")
+
+    def test_boto_session_dado_construye_cliente_desde_la_session(self):
+        """Con boto_session, el cliente sale de esa session (no de boto3 ambiente)."""
+        session = MagicMock()
+        with patch("boto3.client") as client_cls:
+            make_kb(kb_ids=["docs"], region="us-east-1", boto_session=session)
+        client_cls.assert_not_called()
+        session.client.assert_called_once_with("bedrock-agent-runtime", region_name="us-east-1")
+
 
 # ---------------------------------------------------------------------------
 # Loader integration (source == "builtin")
@@ -540,3 +554,21 @@ class TestLoaderBuiltin:
         cfg = ToolConfig.model_validate({"builtin.apicall": {"name": "svc", "allowed_paths": []}})
         with pytest.raises(ToolLoadError, match="Failed to build builtin 'apicall'"):
             get_tools([cfg], *_DIRS)
+
+    def test_overlay_llega_al_builtin_que_lo_declara(self):
+        """El overlay (ej. boto_session) se ofrece a un builtin que lo acepta, como kb."""
+        session = MagicMock()
+        cfg = ToolConfig.model_validate({"builtin.kb": {"kb_ids": ["docs"]}})
+        with patch("boto3.client") as client_cls:
+            get_tools([cfg], *_DIRS, overlay={"boto_session": session})
+        client_cls.assert_not_called()
+        session.client.assert_called_once()
+
+    def test_overlay_se_ignora_en_builtin_que_no_lo_declara(self):
+        """apicall no tiene parametro boto_session: el overlay no le rompe la llamada."""
+        cfg = ToolConfig.model_validate(
+            {"builtin.apicall": {"name": "svc", "base_url": "https://x.com", "allowed_paths": ["/v1/*"]}}
+        )
+        tools = get_tools([cfg], *_DIRS, overlay={"boto_session": MagicMock()})
+        assert len(tools) == 1
+        assert tools[0].tool_name == "svc"

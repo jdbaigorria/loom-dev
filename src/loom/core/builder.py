@@ -113,7 +113,12 @@ def build(
         model_params: Optional per-run overlay merged on top of the model's
             declarative constructor params (see :func:`loom.core.loaders.model.get_model`).
             The build-time channel for per-run secrets — e.g. a Bedrock
-            ``boto_session`` — that must not live in the ``ConfigSource``.
+            ``boto_session`` — that must not live in the ``ConfigSource``. Also
+            offered to every builtin tool's factory (see
+            :func:`loom.core.loaders.tool.get_tools`), filtered to the params it
+            declares — so a builtin like ``builtin.kb`` that accepts
+            ``boto_session`` runs under the same per-run identity as the model,
+            instead of the caller's ambient credentials.
 
     Returns:
         A configured ``strands.Agent`` ready to receive messages.
@@ -145,7 +150,7 @@ def build(
     # Tools come from local/shared Python files and/or MCP servers. MCP clients are
     # ToolProviders handed straight to the agent, which owns their open/close
     # lifecycle (started on build, stopped on ``agent.cleanup()``).
-    local_tools = get_tools(selected_tools, agent_dir, shared_dir) if selected_tools else []
+    local_tools = get_tools(selected_tools, agent_dir, shared_dir, model_params) if selected_tools else []
     mcp_clients = get_mcp_clients(agent_config.mcp_servers) if agent_config.mcp_servers else []
     all_tools = [*local_tools, *mcp_clients]
 

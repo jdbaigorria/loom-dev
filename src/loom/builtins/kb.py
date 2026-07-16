@@ -34,6 +34,7 @@ def make_kb(
     search_type: str = "HYBRID",
     top_k: int = 5,
     name: str = "kb_search",
+    boto_session: Any | None = None,
 ) -> DecoratedFunctionTool:
     """Build a multi-KB Bedrock search tool.
 
@@ -46,6 +47,10 @@ def make_kb(
         search_type: ``"HYBRID"`` or ``"SEMANTIC"``.
         top_k: Passages kept after the cross-KB merge and re-ranking.
         name: Strands tool name (unique within the agent).
+        boto_session: Optional ``boto3.Session`` to build the client from — the
+            per-run credentials overlay (see :func:`loom.core.loaders.tool.get_tools`).
+            ``None`` falls back to boto3's default credential chain (the caller's
+            ambient identity), same as before this parameter existed.
 
     Returns:
         A ``DecoratedFunctionTool`` named ``name``.
@@ -62,7 +67,7 @@ def make_kb(
 
     ids = list(kb_ids)
     valid = set(ids)
-    client = boto3.client("bedrock-agent-runtime", region_name=region)
+    client = (boto_session or boto3).client("bedrock-agent-runtime", region_name=region)
 
     retrieval_config: dict[str, Any] = {
         "vectorSearchConfiguration": {
