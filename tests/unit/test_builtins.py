@@ -5,6 +5,7 @@ schema generation, runtime behaviour with mocked backends, and resolution
 through the tool loader via the ``builtin.`` source.
 """
 
+import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -453,6 +454,11 @@ def _hit(score, text):
     return {"score": score, "content": {"text": text}, "location": {"type": "S3"}}
 
 
+def _passages(result):
+    """Extract the passages list from a kb_search ToolResult (JSON in a text block)."""
+    return json.loads(result["content"][0]["text"].split("\n", 1)[1])["passages"]
+
+
 class TestKb:
     def test_name_por_defecto_y_descripcion_dinamica(self):
         """BLT-T08: name default 'kb_search' y la descripción lista los kb_ids."""
@@ -480,7 +486,7 @@ class TestKb:
         with patch("boto3.client", return_value=client):
             tool = make_kb(kb_ids=["docs", "tickets"], score_threshold=0.7, top_k=5)
         result = tool(query="q")
-        passages = result["content"][1]["json"]["passages"]
+        passages = _passages(result)
         assert [p["text"] for p in passages] == ["A", "C"]  # 0.9 luego 0.8, B filtrado
         assert passages[0]["kb_id"] == "docs"
         assert passages[1]["kb_id"] == "tickets"
@@ -494,7 +500,7 @@ class TestKb:
         ]
         with patch("boto3.client", return_value=client):
             tool = make_kb(kb_ids=["docs", "tickets"], top_k=1)
-        passages = tool(query="q")["content"][1]["json"]["passages"]
+        passages = _passages(tool(query="q"))
         assert len(passages) == 1 and passages[0]["text"] == "A"
 
     def test_search_type_invalido_es_error(self):

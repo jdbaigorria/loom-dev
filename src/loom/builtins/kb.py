@@ -14,6 +14,7 @@ Requires ``boto3`` (Loom's ``aws`` extra). It is imported lazily so that
 importing :mod:`loom.builtins` does not require it.
 """
 
+import json
 import logging
 from typing import Annotated, Any
 
@@ -130,7 +131,12 @@ def make_kb(
         summary = f"{len(passages)} passage(s) from {targets}."
         return {
             "status": "success",
-            "content": [{"text": summary}, {"json": {"passages": passages}}],
+            # A native `json` content block hallucinates on Amazon Nova (Pro/Lite/
+            # Micro) — it produces an invalid tool-use sequence on the next turn.
+            # Every provider (Nova included) parses JSON embedded in `text` fine,
+            # so serializing here keeps the tool provider-agnostic instead of
+            # working on Claude/Bedrock providers that handle `json` natively.
+            "content": [{"text": f"{summary}\n{json.dumps({'passages': passages})}"}],
         }
 
     return search
