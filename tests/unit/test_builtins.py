@@ -5,6 +5,7 @@ schema generation, runtime behaviour with mocked backends, and resolution
 through the tool loader via the ``builtin.`` source.
 """
 
+import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -453,6 +454,11 @@ def _hit(score, text):
     return {"score": score, "content": {"text": text}, "location": {"type": "S3"}}
 
 
+def _passages(result):
+    """Extract the passages list from a kb_search ToolResult (JSON in a text block)."""
+    return json.loads(result["content"][0]["text"].split("\n", 1)[1])["passages"]
+
+
 class TestKb:
     def test_name_por_defecto_y_descripcion_dinamica(self):
         """BLT-T08: name default 'kb_search' y la descripción lista los kb_ids."""
@@ -480,7 +486,7 @@ class TestKb:
         with patch("boto3.client", return_value=client):
             tool = make_kb(kb_ids=["docs", "tickets"], score_threshold=0.7, top_k=5)
         result = tool(query="q")
-        passages = result["content"][1]["json"]["passages"]
+        passages = _passages(result)
         assert [p["text"] for p in passages] == ["A", "C"]  # 0.9 luego 0.8, B filtrado
         assert passages[0]["kb_id"] == "docs"
         assert passages[1]["kb_id"] == "tickets"
@@ -494,7 +500,7 @@ class TestKb:
         ]
         with patch("boto3.client", return_value=client):
             tool = make_kb(kb_ids=["docs", "tickets"], top_k=1)
-        passages = tool(query="q")["content"][1]["json"]["passages"]
+        passages = _passages(tool(query="q"))
         assert len(passages) == 1 and passages[0]["text"] == "A"
 
     def test_search_type_invalido_es_error(self):
@@ -506,6 +512,20 @@ class TestKb:
         """BLT-T13: kb_ids vacío → ValueError."""
         with pytest.raises(ValueError, match="kb_ids"):
             make_kb(kb_ids=[])
+
+    def test_boto_session_none_usa_boto3_client_ambiente(self):
+        """Sin boto_session, arma el cliente con la cadena de credenciales default."""
+        with patch("boto3.client") as client_cls:
+            make_kb(kb_ids=["docs"], region="us-east-1")
+        client_cls.assert_called_once_with("bedrock-agent-runtime", region_name="us-east-1")
+
+    def test_boto_session_dado_construye_cliente_desde_la_session(self):
+        """Con boto_session, el cliente sale de esa session (no de boto3 ambiente)."""
+        session = MagicMock()
+        with patch("boto3.client") as client_cls:
+            make_kb(kb_ids=["docs"], region="us-east-1", boto_session=session)
+        client_cls.assert_not_called()
+        session.client.assert_called_once_with("bedrock-agent-runtime", region_name="us-east-1")
 
 
 # ---------------------------------------------------------------------------
@@ -540,3 +560,21 @@ class TestLoaderBuiltin:
         cfg = ToolConfig.model_validate({"builtin.apicall": {"name": "svc", "allowed_paths": []}})
         with pytest.raises(ToolLoadError, match="Failed to build builtin 'apicall'"):
             get_tools([cfg], *_DIRS)
+
+    def test_overlay_llega_al_builtin_que_lo_declara(self):
+        """El overlay (ej. boto_session) se ofrece a un builtin que lo acepta, como kb."""
+        session = MagicMock()
+        cfg = ToolConfig.model_validate({"builtin.kb": {"kb_ids": ["docs"]}})
+        with patch("boto3.client") as client_cls:
+            get_tools([cfg], *_DIRS, overlay={"boto_session": session})
+        client_cls.assert_not_called()
+        session.client.assert_called_once()
+
+    def test_overlay_se_ignora_en_builtin_que_no_lo_declara(self):
+        """apicall no tiene parametro boto_session: el overlay no le rompe la llamada."""
+        cfg = ToolConfig.model_validate(
+            {"builtin.apicall": {"name": "svc", "base_url": "https://x.com", "allowed_paths": ["/v1/*"]}}
+        )
+        tools = get_tools([cfg], *_DIRS, overlay={"boto_session": MagicMock()})
+        assert len(tools) == 1
+        assert tools[0].tool_name == "svc"

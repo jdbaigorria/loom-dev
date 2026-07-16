@@ -14,6 +14,7 @@ Requires ``boto3`` (Loom's ``aws`` extra). It is imported lazily so that
 importing :mod:`loom.builtins` does not require it.
 """
 
+import json
 import logging
 from typing import Annotated, Any
 
@@ -34,6 +35,7 @@ def make_kb(
     search_type: str = "HYBRID",
     top_k: int = 5,
     name: str = "kb_search",
+    boto_session: Any | None = None,
 ) -> DecoratedFunctionTool:
     """Build a multi-KB Bedrock search tool.
 
@@ -46,6 +48,10 @@ def make_kb(
         search_type: ``"HYBRID"`` or ``"SEMANTIC"``.
         top_k: Passages kept after the cross-KB merge and re-ranking.
         name: Strands tool name (unique within the agent).
+        boto_session: Optional ``boto3.Session`` to build the client from — the
+            per-run credentials overlay (see :func:`loom.core.loaders.tool.get_tools`).
+            ``None`` falls back to boto3's default credential chain (the caller's
+            ambient identity), same as before this parameter existed.
 
     Returns:
         A ``DecoratedFunctionTool`` named ``name``.
@@ -62,7 +68,7 @@ def make_kb(
 
     ids = list(kb_ids)
     valid = set(ids)
-    client = boto3.client("bedrock-agent-runtime", region_name=region)
+    client = (boto_session or boto3).client("bedrock-agent-runtime", region_name=region)
 
     retrieval_config: dict[str, Any] = {
         "vectorSearchConfiguration": {
@@ -125,7 +131,12 @@ def make_kb(
         summary = f"{len(passages)} passage(s) from {targets}."
         return {
             "status": "success",
-            "content": [{"text": summary}, {"json": {"passages": passages}}],
+            # A native `json` content block hallucinates on Amazon Nova (Pro/Lite/
+            # Micro) — it produces an invalid tool-use sequence on the next turn.
+            # Every provider (Nova included) parses JSON embedded in `text` fine,
+            # so serializing here keeps the tool provider-agnostic instead of
+            # working on Claude/Bedrock providers that handle `json` natively.
+            "content": [{"text": f"{summary}\n{json.dumps({'passages': passages})}"}],
         }
 
     return search

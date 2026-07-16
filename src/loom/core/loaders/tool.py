@@ -46,7 +46,9 @@ def _find_tool_class(module) -> type | None:
     return None
 
 
-def _load_builtin(tool_def: ToolConfig) -> list[Callable[[Any], Any]]:
+def _load_builtin(
+    tool_def: ToolConfig, overlay: dict[str, Any] | None = None
+) -> list[Callable[[Any], Any]]:
     """Resolve a builtin tool from the Loom-packaged registry.
 
     Handles both shapes:
@@ -56,6 +58,12 @@ def _load_builtin(tool_def: ToolConfig) -> list[Callable[[Any], Any]]:
     - **Named specialisation** (a resolved ``{name}.yaml``): ``tool_def.builtin``
       is the registry key and ``tool_def.name`` is the logical tool name, passed
       as ``name=`` to the factory.
+
+    ``overlay`` is the same per-run overlay dict passed to :func:`get_tools` —
+    typically credentials such as a Bedrock ``boto_session``. It is filtered down
+    to the keys the resolved factory's signature actually declares before being
+    merged into ``params``, so passing it is a no-op for builtins (like
+    ``apicall``) that don't opt in via a matching parameter name.
 
     Raises:
         ToolLoadError: If the builtin is unknown or its params are invalid.
@@ -72,6 +80,9 @@ def _load_builtin(tool_def: ToolConfig) -> list[Callable[[Any], Any]]:
             tip=f"Available builtins: {sorted(BUILTIN_TOOLS)}",
         )
     params = tool_def.params or {}
+    if overlay:
+        accepted = inspect.signature(factory).parameters
+        params = {**params, **{k: v for k, v in overlay.items() if k in accepted}}
     try:
         # A named specialisation forces the logical name; a plain builtin lets its
         # params decide (preserving the existing generic/domain apicall contract).
@@ -115,7 +126,9 @@ def yaml_tool_to_config(name: str, spec: dict[str, Any]) -> ToolConfig:
     return ToolConfig(name=name, source="builtin", builtin=builtin_target, params=spec)
 
 
-def _load_yaml_tool(name: str, path: Path) -> list[Callable[[Any], Any]]:
+def _load_yaml_tool(
+    name: str, path: Path, overlay: dict[str, Any] | None = None
+) -> list[Callable[[Any], Any]]:
     """Compile a declarative tool defined in a ``{name}.yaml`` file (unhydrated path).
 
     Reads the file and routes it through :func:`yaml_tool_to_config` +
@@ -123,7 +136,7 @@ def _load_yaml_tool(name: str, path: Path) -> list[Callable[[Any], Any]]:
     """
     # load_config resolves OmegaConf refs (incl. ${oc.env:...}) into a plain dict,
     # so a YAML tool gets the same env resolution as the agent YAML.
-    return _load_builtin(yaml_tool_to_config(name, load_config(path)))
+    return _load_builtin(yaml_tool_to_config(name, load_config(path)), overlay)
 
 
 def _load_import_tool(tool_def: ToolConfig) -> list[Callable[[Any], Any]]:
@@ -171,7 +184,10 @@ def _load_import_tool(tool_def: ToolConfig) -> list[Callable[[Any], Any]]:
 
 
 def _load_tool(
-    tool_def: ToolConfig, agent_dir: Path | None, shared_dir: Path | None
+    tool_def: ToolConfig,
+    agent_dir: Path | None,
+    shared_dir: Path | None,
+    overlay: dict[str, Any] | None = None,
 ) -> list[Callable[[Any], Any]]:
     """Load a single tool and return its Strands callables.
 
@@ -181,6 +197,9 @@ def _load_tool(
         agent_dir: Agent root directory (for local tools), or ``None`` when there
             is no local filesystem (builtin/import tools don't need it).
         shared_dir: Workspace shared tools directory, or ``None``.
+        overlay: Optional per-run overlay (e.g. a Bedrock ``boto_session``)
+            offered to builtin tools — see :func:`_load_builtin`. Ignored by
+            local/import tools.
 
     Returns:
         List of ``@tool``-decorated callables found in the module (or builtin).
@@ -191,7 +210,7 @@ def _load_tool(
             ``params``, or contains no valid tools.
     """
     if tool_def.is_builtin:
-        return _load_builtin(tool_def)
+        return _load_builtin(tool_def, overlay)
 
     if tool_def.source == "import":
         return _load_import_tool(tool_def)
@@ -219,7 +238,7 @@ def _load_tool(
                 f"Tool '{tool_def.name}' is a YAML definition and cannot take inline params.",
                 tip=f"Put its config in {yaml_files[0].name}, reference it as '- {tool_def.name}'.",
             )
-        return _load_yaml_tool(tool_def.name, yaml_files[0])
+        return _load_yaml_tool(tool_def.name, yaml_files[0], overlay)
 
     if not tool_file.is_file():
         raise ToolLoadError(
@@ -266,7 +285,10 @@ def _load_tool(
 
 
 def get_tools(
-    tool_defs: list[ToolConfig], agent_dir: Path | None, shared_dir: Path | None
+    tool_defs: list[ToolConfig],
+    agent_dir: Path | None,
+    shared_dir: Path | None,
+    overlay: dict[str, Any] | None = None,
 ) -> list[Callable[[Any], Any]]:
     """Load all tools declared in the agent configuration.
 
@@ -275,6 +297,12 @@ def get_tools(
         agent_dir: Agent root directory, or ``None`` when there is no local
             filesystem (only builtin/import tools are resolvable then).
         shared_dir: Workspace shared tools directory, or ``None``.
+        overlay: Optional per-run overlay dict (e.g. a Bedrock ``boto_session``)
+            offered to every builtin tool's factory, filtered to the parameter
+            names it actually declares (see :func:`_load_builtin`) — the same
+            per-run channel :func:`loom.core.loaders.model.get_model` uses for
+            the model, so a builtin that needs the caller's real credentials
+            (like ``builtin.kb``) opts in just by declaring that parameter.
 
     Returns:
         Flat list of Strands callables from all loaded tools.
@@ -284,7 +312,7 @@ def get_tools(
     """
     tools = []
     for tool_def in tool_defs:
-        tools.extend(_load_tool(tool_def, agent_dir, shared_dir))
+        tools.extend(_load_tool(tool_def, agent_dir, shared_dir, overlay))
 
     logger.info("Loaded %d tool(s)", len(tools))
     return tools
