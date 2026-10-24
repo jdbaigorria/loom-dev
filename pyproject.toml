@@ -11,7 +11,7 @@ dependencies = [
     "omegaconf>=2.3.0",
     # Compatible range, not an exact pin: let Strands patch/minor releases in,
     # and rely on the nightly compat CI to catch a breaking minor early.
-    "strands-agents>=1.34,<2.0",
+    "strands-agents>=1.62.0,<2.0",
 ]
 
 [project.optional-dependencies]
