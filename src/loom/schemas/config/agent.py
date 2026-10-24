@@ -4,6 +4,7 @@ from typing import Literal
 
 from pydantic import model_validator
 
+from .background import BackgroundTasksConfig
 from .conversations import ConversationConfig
 from .hook import HookConfig
 from .intervention import InterventionConfig
@@ -45,6 +46,8 @@ class AgentConfig(StrictConfig):
     interventions: list[InterventionConfig] | None = None
     # Overrides app.yml sandbox for this agent.
     sandbox: SandboxConfig | None = None
+    # True enables background tools. A dict limits which tools may run that way.
+    background_tasks: bool | BackgroundTasksConfig | None = None
     # How tools are executed within a single turn. None → Strands default
     # (concurrent). Requires a Strands build with pluggable tool executors.
     tool_executor: Literal["concurrent", "sequential"] | None = None
@@ -69,6 +72,8 @@ class AgentConfig(StrictConfig):
             raise ValueError("'interventions' is not supported when kind is 'bidi'.")
         if self.sandbox is not None:
             raise ValueError("'sandbox' is not supported when kind is 'bidi'.")
+        if self.background_tasks is not None:
+            raise ValueError("'background_tasks' is not supported when kind is 'bidi'.")
         if self.aux_model is not None:
             raise ValueError("'aux_model' is not supported when kind is 'bidi'.")
         if not isinstance(self.model, str):
