@@ -92,3 +92,21 @@ class TestCapabilities:
             "bidi",
         }
         assert all(isinstance(v, bool) for v in snap.values())
+
+
+def test_bidi_import_is_not_the_deprecated_path():
+    import subprocess
+    import sys
+
+    subprocess.check_call(
+        [
+            sys.executable,
+            "-c",
+            "import warnings; warnings.simplefilter('error', DeprecationWarning); "
+            "import loom.adapters.strands",
+        ]
+    )
+    from loom.adapters.strands import BidiAgent
+
+    assert BidiAgent is not None
+    assert not BidiAgent.__module__.startswith("strands.experimental")
