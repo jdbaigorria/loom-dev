@@ -2,9 +2,10 @@
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, model_validator
+from pydantic import model_validator
 
 from ._validators import parse_single_key_dict
+from .strict import StrictConfig
 
 ToolSource = Literal["file", "shared", "builtin", "import"]
 
@@ -30,7 +31,7 @@ def _split_source(raw_name: str) -> tuple[str, ToolSource]:
     return raw_name, "file"
 
 
-class ToolConfig(BaseModel):
+class ToolConfig(StrictConfig):
     """Configuration for a single tool attached to an agent.
 
     ``source`` records where the tool is resolved from:

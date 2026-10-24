@@ -174,14 +174,17 @@ def build(
     if agent_config.kind == "bidi":
         return _build_bidi(agent_config, shared_params)
 
+    conversation = (
+        agent_config.conversation
+        if agent_config.conversation is not None
+        else app_config.conversation
+    )
     agent_only = {
         "structured_output_model": get_output_class(agent_config.output, agent_dir)
         if agent_config.output
         else None,
         "retry_strategy": get_retry_strategy(agent_config.retry) if agent_config.retry else None,
-        "conversation_manager": get_conversation_manager(app_config.conversation)
-        if app_config.conversation
-        else None,
+        "conversation_manager": get_conversation_manager(conversation) if conversation else None,
     }
 
     clean_params = {k: v for k, v in {**shared_params, **agent_only}.items() if v is not None}

@@ -18,6 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking: unknown config keys are rejected.** Agent, app, conversation, session,
+  retry, prompt, hook, and tool models use `extra="forbid"`. A typo such as `toolz`
+  fails at load time and suggests the closest field. `version` is now a real field
+  on agent YAML (the `loom agent new` template already writes it).
+- **Per-agent `conversation` is honored.** An agent YAML `conversation` overrides
+  `app.yml`. `kind: bidi` rejects `conversation`.
+
 - **`region` removed from `loom.toml`; it lives only in `app.yml` now.** `loom.toml`
   is project layout/bootstrap (the workspace locator); `region` is a runtime/infra
   setting and belongs with the rest of the runtime config in `app.yml`. The

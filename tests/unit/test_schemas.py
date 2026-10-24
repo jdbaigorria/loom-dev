@@ -431,3 +431,52 @@ class TestAgentResponse:
             response_time_ms=100,
         )
         assert meta.model_id is None
+
+
+def test_unknown_agent_key_names_the_field_and_suggests():
+    from loom.schemas.config.agent import AgentConfig
+
+    with pytest.raises(ValidationError, match=r"toolz.*tools"):
+        AgentConfig.model_validate({"name": "x", "toolz": ["a"]})
+
+
+def test_unknown_app_key_names_the_field():
+    from loom.schemas.config.app import AppConfig
+
+    with pytest.raises(ValidationError, match="regionn"):
+        AppConfig.model_validate({"regionn": "us-east-1"})
+
+
+def test_bidi_rejects_conversation():
+    from loom.schemas.config.agent import AgentConfig
+
+    with pytest.raises(ValidationError, match="conversation"):
+        AgentConfig.model_validate({"name": "voice", "kind": "bidi", "conversation": "sliding"})
+
+
+def test_example_and_new_agent_yaml_still_validate():
+    from pathlib import Path
+
+    import yaml
+    from jinja2 import Environment
+
+    from loom.schemas.config.agent import AgentConfig
+
+    root = Path(__file__).resolve().parents[2]
+    for path in (root / "examples").rglob("*.yml"):
+        AgentConfig.model_validate(yaml.safe_load(path.read_text(encoding="utf-8")))
+
+    template = (root / "src/loom/templates/new/config/{{folder_name}}.yml.j2").read_text(
+        encoding="utf-8"
+    )
+    rendered = Environment().from_string(template).render(
+        agent={
+            "name": "demo",
+            "description": "d",
+            "model": "default",
+            "system_prompt": {"prompt": "prompt.md"},
+            "retry": "low",
+            "output": None,
+        }
+    )
+    AgentConfig.model_validate(yaml.safe_load(rendered))
