@@ -42,8 +42,8 @@ from .loaders.context import conversation_is_none, get_context
 from .loaders.conversation import get_conversation_manager
 from .loaders.hook import get_hooks
 from .loaders.mcp import get_mcp_clients
-from .loaders.model import get_model, is_router_model
-from .loaders.output import get_output_class
+from .loaders.model import get_model, is_router_model, model_log_label
+from .loaders.output import get_output_class, output_target
 from .loaders.plugin import get_plugins
 from .loaders.prompt import get_prompt
 from .loaders.retry import get_retry_strategy
@@ -143,9 +143,7 @@ def build(
     logger.debug(
         "Building '%s': model=%s, tools=%d/%d, prompt=%s",
         name,
-        "fallback"
-        if is_router_model(agent_config.model)
-        else (agent_config.model if isinstance(agent_config.model, str) else "inline"),
+        model_log_label(agent_config.model),
         len(selected_tools),
         len(agent_config.tools) if agent_config.tools else 0,
         type(agent_config.system_prompt).__name__ if agent_config.system_prompt else None,
@@ -221,10 +219,19 @@ def build(
             tip="Set conversation: none for this model.",
         )
     skip_conversation = context_manager is not None or stateful
+    output_class = None
+    output_prompt = None
+    if agent_config.output:
+        class_name, output_prompt = output_target(agent_config.output)
+        output_class = get_output_class(class_name, agent_dir)
+        if output_prompt is not None and not capabilities.agent_accepts("structured_output_prompt"):
+            raise AgentConfigError(
+                "The installed Strands version does not accept structured_output_prompt.",
+                tip="Requiere strands-agents >= 1.34",
+            )
     agent_only = {
-        "structured_output_model": get_output_class(agent_config.output, agent_dir)
-        if agent_config.output
-        else None,
+        "structured_output_model": output_class,
+        "structured_output_prompt": output_prompt,
         "retry_strategy": get_retry_strategy(agent_config.retry) if agent_config.retry else None,
         "conversation_manager": None
         if skip_conversation

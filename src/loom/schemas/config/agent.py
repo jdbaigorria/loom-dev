@@ -8,6 +8,7 @@ from .conversations import ConversationConfig
 from .hook import HookConfig
 from .mcp import MCPServerConfig
 from .models import ModelConfig
+from .output import StructuredOutputConfig
 from .plugin import PluginConfig
 from .prompt import PromptConfig
 from .retry import RetryStrategyConfig
@@ -30,7 +31,7 @@ class AgentConfig(StrictConfig):
     # Profile name or inline model for SDK side calls (summary, memory, classifiers).
     aux_model: ModelConfig | None = None
     retry: RetryStrategyConfig = "low"
-    output: str | None = None
+    output: str | StructuredOutputConfig | None = None
     tools: list[ToolConfig] | None = None
     mcp_servers: list[MCPServerConfig] | None = None
     hooks: list[HookConfig] | None = None
