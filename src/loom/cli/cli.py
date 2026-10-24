@@ -14,6 +14,7 @@ from .commands.validate import app as validate_agent_app
 from .commands.version import app as version_app
 from .commands.view import app as view_agent_app
 from .commands.workflow import app as workflow_app
+from .plugins import mount_cli_plugins
 
 app = Typer(
     name="loom",
@@ -41,9 +42,12 @@ app.add_typer(doctor_app, name="doctor")
 app.add_typer(version_app, name="version")
 app.add_typer(workflow_app, name="workflow")
 
-# `loom evals` lives behind the optional [evals] extra (strands-agents-evals).
-# Register it only when that stack is importable, so the rest of the CLI works
-# on a `[cli]`-only install instead of failing at import time.
+# Optional CLI plugins (group ``loom.cli``). A plugin that fails to load is still
+# mounted, as a command that reports the error — never silently dropped.
+mount_cli_plugins(app)
+
+# `loom evals` still ships inside this package until it moves to loom-declarative-evals.
+# Register it only when that stack is importable, so a `[cli]`-only install keeps working.
 try:
     from .commands.evals import app as evals_app
 except ImportError:

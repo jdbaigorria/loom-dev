@@ -33,6 +33,7 @@ def run_doctor(check_aws: bool = True) -> dict[str, list[ValidationResult]]:
         "aws": [],
         "project": [],
         "agents": [],
+        "plugins": [],
     }
 
     # System
@@ -148,6 +149,17 @@ def run_doctor(check_aws: bool = True) -> dict[str, list[ValidationResult]]:
                 )
     except (ProjectNotInitializedError, NoAgentsFoundError):
         pass  # no project or no agents: empty section, not a doctor error
+
+    from loom.cli.plugins import cli_plugin_status
+
+    for name, dist, dist_version, error in cli_plugin_status():
+        label = f"{name} ({dist} {dist_version})"
+        if error is None:
+            results["plugins"].append(ValidationResult(ok=True, message=label))
+        else:
+            results["plugins"].append(
+                ValidationResult(ok=False, message=label, tip=f"{type(error).__name__}: {error}")
+            )
 
     return results
 

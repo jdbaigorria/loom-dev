@@ -671,7 +671,7 @@ class TestRunDoctor:
 
         sections = run_doctor(check_aws=False)
 
-        assert set(sections.keys()) == {"system", "aws", "project", "agents"}
+        assert set(sections.keys()) == {"system", "aws", "project", "agents", "plugins"}
 
     def test_sistema_siempre_incluye_python_y_loom(self, doctor_env):
         """SVC-DR02: system section has at least 2 checks (Python + loom)"""
