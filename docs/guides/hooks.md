@@ -2,6 +2,8 @@
 
 Hooks are Python callables that run **before** and/or **after** each agent invocation. Use them for logging, auditing, injecting context, or modifying responses without touching agent logic.
 
+Plugins are a separate list (`plugins` on the agent). A hook is a callback. A plugin is a Strands `Plugin` instance (`skills`, `context_offloader`, `goal`, or your own class). See [Memory, context, and control](memory-context-control.md).
+
 ## Declaring hooks
 
 ```yaml title="warp/agents/my_agent/config/my_agent.yml"

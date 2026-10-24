@@ -245,7 +245,7 @@ def get_prompt(
                 prompt="base.md",
                 cache=True,
                 context="context.md",
-                variables={"model_name": "Claude 3.5"}
+                variables={"model_name": "Claude Sonnet 5.5"}
             )
             blocks = get_prompt(config)
     """

@@ -1,0 +1,37 @@
+name: assistant
+description: Offline agent that opts into the Strands 1.62 YAML fields
+version: 0.1.0
+
+model:
+  import_path: loom.testing.MockModel
+  params:
+    responses: ["from primary"]
+
+aux_model:
+  import_path: loom.testing.MockModel
+  params:
+    responses: ["from aux"]
+
+system_prompt:
+  prompt: "You are a helpful assistant. Answer in one sentence."
+  is_resolved: true
+
+conversation: none
+context: "off"
+
+plugins:
+  - goal:
+      goal: "Answer in one sentence"
+      max_attempts: 1
+
+memory:
+  stores:
+    - file:
+        name: notes
+        description: "Facts about {user_id} in {session_id}"
+
+interventions:
+  - hitl: {}
+
+background_tasks: true
+checkpointing: true

@@ -61,3 +61,11 @@ conversation:
 # defaults:
 #   model: default
 #   retry: low
+
+# Optional: shared storage (local, s3, or memory). Bidi agents accept this.
+# storage:
+#   local: { base_dir: .loom/storage }
+
+# Optional: isolate command and file tools. Without it they run on the host.
+# sandbox:
+#   docker: { container: loom-runner, working_dir: /work }

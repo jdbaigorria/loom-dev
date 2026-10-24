@@ -116,6 +116,16 @@ my_finetune  = "my.pkg.FinetunedBedrock"
 
 Now any inline model config can use `provider: internal_llm`.
 
+### Fallback profile
+
+```toml
+[model.resilient]
+fallback = ["powerful", "economic"]
+max_switches = 2
+```
+
+`model: resilient` builds a `ModelRouter`. Classifier routing (`model.route`) stays in the agent YAML. See [Models & providers](../guides/models.md).
+
 ## Deep merge semantics
 
 User values in `profiles.toml` are merged over built-ins at the profile level. Specifically:

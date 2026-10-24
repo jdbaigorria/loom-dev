@@ -62,6 +62,31 @@ mcp_servers:
 
 # Tool execution (optional)
 tool_executor: concurrent   # or: sequential
+
+# Side-call model (optional). Same shape as model. Not a list or a fallback.
+# aux_model: economic
+
+# Context manager (optional). Requires conversation: none.
+# context: auto          # auto | agentic | off
+
+# Plugins (optional). Built-ins: skills, context_offloader, goal.
+# plugins:
+#   - goal: { goal: "The answer includes the ticket number", max_attempts: 3 }
+
+# Memory stores (optional). {user_id} and {session_id} resolve at build.
+# memory:
+#   stores:
+#     - file: { name: notes, description: "Facts about {user_id}" }
+
+# Interventions (optional). ask omitted → interrupt, resumed by loom agent run.
+# interventions:
+#   - hitl: { allowed_tools: [search_orders] }
+
+# Background tools (optional).
+# background_tasks: true
+
+# Experimental. Does not store the conversation; pair with session in app.yml.
+# checkpointing: true
 ```
 
 ## Fields
@@ -78,7 +103,7 @@ Human-readable description. Surfaced in catalog/discovery listings and used as t
 
 ### model
 
-**Default:** `"default"` (Claude 3.5 Sonnet on Bedrock)
+**Default:** `"default"` (Claude Sonnet 5.5 on Bedrock)
 
 Profile name (string) or inline config:
 
@@ -87,6 +112,8 @@ Profile name (string) or inline config:
 | Profile name | `model: economic` |
 | Provider alias | `model: { provider: openai, params: { model_id: gpt-4o } }` |
 | Full import path | `model: { import_path: strands.models.openai.OpenAIModel, params: {} }` |
+| Fallback list | `model: [powerful, economic]` |
+| Classifier route | `model: { route: { strategy: classifier, classifier: economic, candidates: [...] } }` |
 
 See [Models & providers](../guides/models.md).
 

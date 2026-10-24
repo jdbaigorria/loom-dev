@@ -105,3 +105,5 @@ conversation: summarize
 - Conversation management applies to the context sent to the **model**. Session storage (disk/S3) always stores the complete history.
 - The summarizing strategy calls a second model invocation to produce the summary. The `economic` profile is used by default to keep costs low.
 - `summarization_agent` and `summarization_system_prompt` are mutually exclusive — provide one or neither.
+- A stateful model cannot use `sliding` or `summarize`. Set `conversation: none` for that model.
+- `context: auto`, `agentic`, or `off` replaces this manager. When `context` is set, `conversation` must be `none` (the app default). See [Memory, context, and control](memory-context-control.md).

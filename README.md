@@ -11,7 +11,7 @@
 Loom is a **build** library: it turns a declarative YAML definition into a native [Strands](https://github.com/strands-agents/harness-sdk) `Agent` / `Graph` / `Swarm` and hands it back. Execution belongs to the caller — Loom does not wrap or manage runtime.
 
 - **Fast scaffolding** — `loom init` and `loom agent new` generate a consistent workspace (`loom.toml`, app config, agent folders).
-- **Declarative agents** — Model, prompts, tools, hooks, sessions, retries, and structured output are driven by validated YAML (fail fast at load time via `build_agent` and `loom agent validate`).
+- **Declarative agents** — Model, prompts, tools, hooks, sessions, retries, structured output, and the optional Strands 1.62 fields (plugins, context, memory, interventions, sandbox, storage) are driven by validated YAML. A field you leave out stays off. Config fails at load time via `build_agent` and `loom agent validate`.
 - **Native runtime, no wrapper** — `build_agent(name, session) → strands.Agent`. You call, inspect, and compose the real Strands object; Loom is out of the loop after build.
 - **Observability** — Each dev/eval invocation appends metrics to `.loom/stats/{agent}.jsonl`; `loom agent stats` summarizes history.
 - **Evaluations** — Define cases and evaluators in YAML, run with `loom evals`, persist results under the agent’s `evals/results/`, and check regressions across runs.
@@ -41,7 +41,7 @@ runtime can install just the slim core. Not on PyPI yet — install pinned to a
 pip install "loom-declarative @ git+https://github.com/jdbaigorria/loom-dev@vX.Y.Z"
 # Full authoring experience (CLI, wizards, evals, AWS doctor):
 pip install "loom-declarative[all] @ git+https://github.com/jdbaigorria/loom-dev@vX.Y.Z"
-# or pick extras à la carte: [cli], [evals] (alias of loom-declarative-evals), [aws]
+# or pick extras à la carte: [cli], [evals] (alias of loom-declarative-evals), [aws], [tools], [cedar]
 uv add "loom-declarative[cli] @ git+https://github.com/jdbaigorria/loom-dev@vX.Y.Z"
 ```
 
@@ -104,6 +104,7 @@ project_root/
     │   ├── app.<env>.yml        # Optional per-environment overrides
     │   └── profiles.toml        # Optional: override/extend built-in model/retry/conversation profiles
     ├── hooks/                   # Optional hook modules
+    ├── plugins/                 # Optional Strands plugins (warp/plugins/<name>.py)
     ├── workflows/               # Multi-agent workflow YAML (loom workflow …)
     │   └── <name>.yml
     ├── entrypoints/             # Entrypoint YAML — router or intent selector (loom entrypoint …)
@@ -180,9 +181,11 @@ run = run_dev("my_agent", "What is the status?", session)
 print(run.response.answer)
 meta = run.response.metadata
 print(meta.total_tokens, meta.response_time_ms, meta.model_id)
+# meta.model_attempts lists each fallback try; response.checkpoint is set
+# when experimental checkpointing paused the turn.
 ```
 
-`run_dev` is **polymorphic over agents and workflows** — it resolves `name` by where its YAML lives (`warp/agents/<name>/` vs `warp/workflows/<name>.yml`) and runs accordingly; pass `kind="agent" | "workflow"` to disambiguate a name that exists as both. More examples (conversation continuity, extras/invocation_state, stats, built-in tools) live under [`examples/`](examples/).
+`run_dev` is **polymorphic over agents and workflows** — it resolves `name` by where its YAML lives (`warp/agents/<name>/` vs `warp/workflows/<name>.yml`) and runs accordingly; pass `kind="agent" | "workflow"` to disambiguate a name that exists as both. More examples (conversation continuity, extras/invocation_state, stats, built-in tools, Strands 1.62 YAML) live under [`examples/`](examples/). `examples/09_sdk_features` builds those fields with a fake model and no network.
 
 Need the catalog of everything buildable, without importing agent code? Use `discover`:
 

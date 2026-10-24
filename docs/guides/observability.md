@@ -44,7 +44,10 @@ print(meta.model_id)           # str
 print(meta.input_tokens)       # int
 print(meta.output_tokens)      # int
 print(meta.tool_calls)         # list[str]
+print(meta.model_attempts)     # list[dict] — set when model uses fallback or a classifier
 ```
+
+After a fallback, `model_id` is the candidate that answered, not the first name in the YAML. `model_attempts` lists each try as `{candidate, model_id, outcome}`. The same two fields are written into the stats record.
 
 ## OpenTelemetry export
 
@@ -56,7 +59,11 @@ telemetry:
   exporter: otlp        # or: console
   metrics: false        # set true to export metrics as well
   service_name: my-agents-service
+  trace_attributes: { app: billing, team: payments }
+  baggage_attributes: { tenant: acme }
 ```
+
+When you declare `trace_attributes` or `baggage_attributes`, Loom adds `session.id` and `user.id` from the `LoomSession`. A key you wrote yourself wins over those two. Omit both maps and Loom passes neither argument. `kind: bidi` rejects these attributes.
 
 ### OTLP endpoint
 

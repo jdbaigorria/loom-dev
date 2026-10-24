@@ -1,0 +1,9 @@
+conversation: none
+storage: memory
+sandbox:
+  docker:
+    container: loom-runner
+telemetry:
+  trace_attributes:
+    app: examples
+    session.id: from-yaml

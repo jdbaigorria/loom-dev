@@ -17,7 +17,7 @@ Usage:
     apply_template(
         template_root=Path("templates/new_agent"),
         output_root=Path("warp/agents"),
-        context={"agent_name": "my_agent", "model": "claude-3-5-sonnet"}
+        context={"agent_name": "my_agent", "model": "default"}
     )
 """
 

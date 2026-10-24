@@ -62,7 +62,7 @@ tool_executor: concurrent    # or: sequential (default: Strands default = concur
 Specify a **profile name** (resolved from built-ins or `warp/config/profiles.toml`) or an **inline config**:
 
 ```yaml
-model: economic          # built-in profile → Claude 3.5 Haiku / Bedrock
+model: economic          # built-in profile → Claude Haiku 5.5 on Bedrock
 
 # Short provider alias (no full path needed):
 model:
@@ -141,6 +141,10 @@ When `output:` is set, the agent returns a Pydantic model instead of a plain str
 
 ```yaml
 output: my_app.schemas.OrderSummary
+# or, with a custom prompt sent when the model is forced onto that schema:
+# output:
+#   class: my_app.schemas.OrderSummary
+#   prompt: Answer only with the order fields.
 ```
 
 ```python title="my_app/schemas.py"
@@ -157,6 +161,27 @@ response = agent.invoke(request)
 summary = response.output   # OrderSummary instance
 print(summary.order_id, summary.status)
 ```
+
+## Strands fields you opt into
+
+Loom can pass the Strands 1.62 agent parameters, and only the ones the YAML names. Leave a field out and the agent is built as before. `kind: bidi` rejects every one of these except app-level `storage`.
+
+| Field | Where | What it does |
+|---|---|---|
+| `model: [a, b]` or `fallback` | agent | Fail over across candidates |
+| `model.route` | agent | Pick one candidate with a classifier (extra call, no failover) |
+| `aux_model` | agent | Model for side calls (summary, memory, classifiers) |
+| `plugins` | agent | `skills`, `context_offloader`, `goal`, a dotted class, or `warp/plugins/` |
+| `context` | agent | `auto`, `agentic`, or `off`. Requires `conversation: none` |
+| `memory` | agent | File or Bedrock memory stores. `{user_id}` and `{session_id}` fill in at build |
+| `interventions` | agent | `hitl` (interrupt or `ask: stdio`) and `cedar` |
+| `background_tasks` | agent | Let named tools run in the background |
+| `checkpointing` | agent | Experimental pause between cycles. Needs `session` to keep history |
+| `storage` | `app.yml` | Shared `local`, `s3`, or `memory` backend. Bidi accepts this one |
+| `sandbox` | `app.yml`, override on the agent | `docker` or `ssh`. Without it, command tools run on the host |
+| `trace_attributes`, `baggage_attributes` | `telemetry` in `app.yml` | Loom adds `session.id` and `user.id`; your keys win |
+
+The narrative, including the difference between `builtin.kb` and a `bedrock_kb` memory store, is in [Memory, context, and control](memory-context-control.md). Field-by-field schemas are in [Agent YAML](../reference/agent-yaml.md) and [App YAML](../reference/app-yaml.md). A runnable offline agent is `examples/09_sdk_features`.
 
 ## App-level defaults
 

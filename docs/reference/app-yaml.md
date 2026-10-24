@@ -38,7 +38,18 @@ telemetry:
   enabled: false
   exporter: otlp    # or: console
   metrics: false
-  service_name: my-agents
+  # trace_attributes: { app: billing }
+  # baggage_attributes: { tenant: acme }
+
+# Shared storage for subsystems that do not set their own (optional).
+# The only new field a kind: bidi agent accepts.
+# storage:
+#   local: { base_dir: .loom/storage }
+# storage: memory
+
+# Where command and file tools run (optional). Without this they use the host.
+# sandbox:
+#   docker: { container: loom-runner, working_dir: /work }
 ```
 
 ## Environment overrides
@@ -64,7 +75,7 @@ LOOM_ENV=staging loom agent run my_agent
 
 **Default:** `us-east-1`
 
-AWS region for Bedrock API calls. Also configurable in `loom.toml` (workspace-level default).
+AWS region for Bedrock API calls. Set it here. `loom.toml` does not carry a region.
 
 ### log_level
 
