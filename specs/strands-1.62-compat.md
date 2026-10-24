@@ -27,8 +27,9 @@ Resultado de la validación:
   anticorrupción resuelve todos los símbolos.
 - Aun así hay **3 roturas reales en runtime que la suite no detecta**, porque los tests mockean
   justo los puntos de integración afectados (ver §5, F6).
-- Además hay deprecaciones con fecha de retiro ya vencida, un bug conocido en los evaluators y un
-  problema de Windows que impide clonar el repo e instalar el paquete.
+- Además hay deprecaciones con fecha de retiro ya vencida, un bug conocido en los evaluators, un
+  problema de Windows que impide clonar el repo e instalar el paquete, y un bug de validación de
+  Loom: la `conversation` por agente se ignora y las claves mal escritas pasan sin aviso (F8).
 
 | ID | Hallazgo | Severidad | Afecta desde |
 |---|---|---|---|
@@ -40,6 +41,7 @@ Resultado de la validación:
 | F5 | Graphs sin límites de ejecución: Strands avisa "execution is unbounded" | Baja | strands 1.60.0 |
 | F6 | Puntos ciegos en tests/CI: la suite pasa en verde con F1, F2 y F4 | **Alta** (proceso) | — |
 | F7 | Menores: fallback muerto, lock desactualizado, documentación | Baja | — |
+| F8 | La `conversation` por agente se pierde, y `AgentConfig` acepta claves desconocidas (un error de tipeo deja al agente sin tools o hooks) | **Alta** | — (no depende de Strands) |
 
 ---
 
@@ -461,6 +463,74 @@ strands 1.62 y evals 1.7) **no habría abierto ningún issue**.
 
 ---
 
+### F8 — La `conversation` por agente se pierde y `AgentConfig` acepta claves desconocidas · **Alta**
+
+**Afecta:** a cualquier versión de Strands; es un bug de Loom.
+
+**Síntoma** (reproducido con `FileConfigSource` + `build_agent`, sin mocks):
+
+- Con `app.yml` en `conversation: sliding` + `defaults: { conversation: sliding }` y un agente con
+  `conversation: summarize`, el merge de OmegaConf (`adapters/config/file_source.py:87-93`)
+  produce `conversation: summarize` (gana el agente). Aun así, **el agente construido recibe
+  `SlidingWindowConversationManager`**.
+- `AgentConfig(name="x", toolz=[...], hoks=[...])` carga sin error y deja `tools=None` y
+  `hooks=None`: el agente queda sin tools ni hooks y nadie se entera.
+
+**Causa**
+
+1. `AgentConfig` (`schemas/config/agent.py`) no declara `conversation`. Pydantic, con su default
+   `extra="ignore"`, descarta el campo después del merge. El builder solo lee
+   `app_config.conversation` (`core/builder.py:182`).
+2. La documentación promete el override por agente (`docs/guides/conversations.md:87-101` y
+   `docs/reference/app-yaml.md:133-136`), pero el código no lo cumple.
+3. La validación estricta es inconsistente:
+   - **Con** `extra="forbid"`: `loom.py`, `mcp.py`, `models.py`, `telemetry.py` y `workflow.py`.
+   - **Sin**: `agent.py`, `app.py`, `conversations.py` (7 modelos), `sessions.py` (5), `hook.py`,
+     `prompt.py`, `retry.py` y `tool.py`.
+
+   En estos últimos, una clave mal escrita (p. ej. `window_sise`) cae al default sin aviso. Eso
+   contradice el "fail fast at load time" del README. Ya hubo un caso de la misma familia: el
+   comentario de `_CONFIG_KEY_MAP` (`core/loaders/session.py:29-32`) documenta que `path` se
+   descartaba en silencio.
+
+**Arreglo**
+
+1. **Conversación por agente**
+   - Agregar `conversation: str | ConversationConfig | None = None` a `AgentConfig`.
+   - En el builder: `agent_config.conversation` si no es `None`; si lo es, `app_config.conversation`.
+     El agente gana, igual que con `defaults`.
+   - Rechazar `conversation` con `kind: bidi`, mediante el validador del schema (el builder ya la
+     omite en bidi).
+   - La regla `context` vs `conversation` de [`sdk-1.62-features.md`](sdk-1.62-features.md) §3.2 usa
+     la conversación **resuelta** del agente.
+2. **Validación estricta**
+   - Agregar `version: str | None = None` a `AgentConfig`. La plantilla de `loom agent new`
+     (`templates/new/config/{{folder_name}}.yml.j2:3`) y los ejemplos lo generan; sin este campo,
+     `forbid` rompería todos los agentes existentes.
+   - Poner `model_config = ConfigDict(extra="forbid")` en `AgentConfig`, `AppConfig` y los modelos de
+     `conversations.py`, `sessions.py`, `retry.py`, `prompt.py`, `hook.py` y `tool.py`. Los campos que
+     son dicts libres por diseño (`params`, `config`, `defaults`) siguen aceptando cualquier clave.
+   - Antes de activarlo, verificar si algún código lee claves del YAML crudo que no estén en el
+     schema (p. ej. `schemas/config/agent_summary.py`, `loom agent view`).
+   - Los `defaults` de `app.yml` heredan la validación al mezclarse con el agente: una clave
+     desconocida en `defaults` también falla.
+3. **Mensajes:** el error debe nombrar la clave desconocida y sugerir la más parecida
+   (`toolz` → `tools`), por ejemplo con `difflib.get_close_matches` sobre `model_fields`.
+
+**Compatibilidad:** puede romper YAMLs que hoy cargan con claves sobrantes. En 1.0.0rc1 es
+aceptable: hay que anotarlo como *breaking* en el CHANGELOG y validar en CI todos los YAML de
+`examples/` y la plantilla.
+
+**Tests**
+
+- Regresión del síntoma: `defaults` + override por agente → `SummarizingConversationManager`; sin
+  override → el de `app.yml`.
+- `AgentConfig` y `AppConfig` con una clave desconocida → `ValidationError` que la nombra e incluye
+  la sugerencia.
+- Todos los YAML de `examples/` y la plantilla de `loom agent new` siguen validando.
+
+---
+
 ## 6. Cambios de dependencias
 
 | Dependencia | Hoy | Propuesto | Nota |
@@ -484,17 +554,20 @@ Un commit por paso, en formato Conventional Commits (lo exige el hook `commit-ms
    [`evals-package-split.md`](evals-package-split.md) §6. Va antes de F4, para no arreglar código
    que después se mueve, y antes de F1–F3, para que todo el trabajo siguiente ya use la estructura
    final.
-3. `fix(mcp): build http transports through MCPClient(url=) on Strands >= 1.53` → **F1**, más los
+3. `fix(config): honor per-agent conversation and reject unknown config keys` → **F8**. Va antes
+   de F1–F5 para que los campos que agregan esos arreglos nazcan con validación estricta.
+4. `fix(mcp): build http transports through MCPClient(url=) on Strands >= 1.53` → **F1**, más los
    tests de contrato.
-4. `fix(build): reject tool_executor on bidi agents when Strands dropped it` → **F2**.
-5. `fix(adapters): prefer strands.bidi over the deprecated experimental path` → **F3**.
-6. `fix(evals): normalize report shapes and evaluator names across evals versions` → **F4.1–F4.3**,
+5. `fix(build): reject tool_executor on bidi agents when Strands dropped it` → **F2**.
+6. `fix(adapters): prefer strands.bidi over the deprecated experimental path` → **F3**.
+7. `fix(evals): normalize report shapes and evaluator names across evals versions` → **F4.1–F4.3**,
    en `loom-declarative-evals`, quitando los `xfail`.
-7. `build(deps): widen strands-agents-evals to <2.0 and refresh uv.lock` → **F4.4** (en el
+8. `build(deps): widen strands-agents-evals to <2.0 and refresh uv.lock` → **F4.4** (en el
    paquete), **F7**.
-8. `feat(workflow): expose graph execution limits` → **F5**, más la documentación.
-9. `ci: run the suite on windows-latest and guard against NTFS-invalid paths` → **F6.3**, **F0.4**.
-10. `docs: update guides and changelog for Strands 1.62 compatibility` → **F7**.
+9. `feat(workflow): expose graph execution limits` → **F5**, más la documentación.
+10. `ci: run the suite on windows-latest and guard against NTFS-invalid paths` → **F6.3**, **F0.4**.
+11. `docs: update guides and changelog for Strands 1.62 compatibility` → **F7**, más la nota
+    *breaking* de F8.
 
 ---
 
@@ -511,6 +584,10 @@ Un commit por paso, en formato Conventional Commits (lo exige el hook `commit-ms
       strands 1.62.
 - [ ] No queda ningún `xfail` por `_INCLUDE_INPUTS_BUG`.
 - [ ] `git clone` en Windows hace checkout completo, y el wheel construido se instala en Windows.
+- [ ] Un agente con `conversation` propia recibe ese conversation manager, con o sin `defaults` en
+      `app.yml`.
+- [ ] Una clave desconocida en el YAML de un agente o en `app.yml` falla al cargar, nombrando la
+      clave; todos los YAML de `examples/` y la plantilla de `loom agent new` siguen validando.
 
 ---
 

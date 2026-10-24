@@ -116,11 +116,13 @@ context:
   dict; `import_path` → instancia.
 - **Conflicto con `conversation`:** con `context_manager` definido, el SDK **ignora en silencio** el
   `conversation_manager`. Hoy Loom siempre pasa uno, porque `conversation: none` (el default de
-  `app.yml`) se resuelve como `NullConversationManager` (`config/profiles.py:64`). Reglas:
-  - Si el agente declara `context` y `app.yml` deja `conversation` en `none` o `None`, **no** se pasa
+  `app.yml`) se resuelve como `NullConversationManager` (`config/profiles.py:64`). Las reglas usan
+  la conversación **resuelta** del agente: la propia si la declara, y si no la de `app.yml` (ver
+  [`strands-1.62-compat.md`](strands-1.62-compat.md) F8):
+  - Si el agente declara `context` y su conversación resuelta es `none` o `None`, **no** se pasa
     `conversation_manager`.
-  - Si `conversation` es otra estrategia, se lanza `AgentConfigError`: son excluyentes, y hay que
-    elegir `context` o `conversation`.
+  - Si es otra estrategia, se lanza `AgentConfigError`: son excluyentes, y hay que elegir `context` o
+    `conversation`.
 - **Modelos stateful:** el SDK lanza `ValueError` si recibe `context_manager` o `conversation_manager`
   con un modelo `stateful`. Ver §7, hallazgo H1.
 
