@@ -34,7 +34,7 @@ jobs:
           python-version: "3.14"
 
       - name: Build package
-        run: uv build
+        run: uv build --all-packages
 
       - name: Smoke-test the wheel
         # Refuses to release a wheel whose `loom init` produces an empty project.

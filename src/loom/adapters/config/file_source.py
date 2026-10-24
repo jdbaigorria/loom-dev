@@ -52,9 +52,7 @@ class FileConfigSource:
             :func:`resolve_env` (``LOOM_ENV`` or ``"dev"``) at call time.
     """
 
-    def __init__(
-        self, workspace: WorkspacePaths | None = None, env: str | None = None
-    ) -> None:
+    def __init__(self, workspace: WorkspacePaths | None = None, env: str | None = None) -> None:
         self._ws = workspace or build_workspace_paths()
         self._env = env
 
@@ -241,7 +239,9 @@ class FileConfigSource:
                 out.append(td)
                 continue
 
-            base_dir = self._ws.shared_tools_dir if td.is_shared else self._ws.agent_dir(name) / "tools"
+            base_dir = (
+                self._ws.shared_tools_dir if td.is_shared else self._ws.agent_dir(name) / "tools"
+            )
             py_file = base_dir / f"{td.name}.py"
             yaml_files = [
                 p for ext in _TOOL_YAML_EXTS if (p := base_dir / f"{td.name}.{ext}").is_file()

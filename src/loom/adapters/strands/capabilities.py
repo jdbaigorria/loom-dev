@@ -95,10 +95,10 @@ def has_mcp() -> bool:
 
 @cache
 def has_bidi() -> bool:
-    """True if Strands exposes the experimental bidirectional (full-duplex) agent."""
+    """True if Strands exposes the bidirectional (full-duplex) agent."""
     return is_available(
-        "strands.experimental.bidi.BidiAgent",
-        "strands.experimental.bidi.agent.BidiAgent",
+        "strands.bidi.BidiAgent",
+        "strands.bidi.agent.BidiAgent",
     )
 
 

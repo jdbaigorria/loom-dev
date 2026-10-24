@@ -7,7 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Graph execution limits.** A graph workflow can set `max_node_executions`,
+  `execution_timeout`, `node_timeout`, and `reset_on_revisit`. Unset limits keep
+  the previous behavior, including Strands' warning that execution is unbounded.
+- **`loom-declarative-evals` package.** The evaluation runner, `loom evals` CLI, and
+  `strands_evals` adapter moved out of the core into this package (import `loom_evals`).
+  `pip install "loom-declarative[evals]"` remains as an alias. `from loom import LoomEvals`
+  still works and emits a `DeprecationWarning`; use `from loom_evals import LoomEvals`.
+  CLI plugins advertise a Typer app under the `loom.cli` entry-point group. A plugin that
+  fails to load is still mounted and reports the error. `loom doctor` lists installed plugins.
+- **Evaluator `name`.** Each evaluator in `evals.yml` can set a unique `name`. Repeated
+  types get `output`, `output_2`, and so on. Reports are normalized for both
+  `strands-agents-evals` 0.1 and 1.x.
+
 ### Changed
+
+- **`strands-agents` floor is 1.62.0.** HTTP MCP transports are built with
+  `MCPClient(url=…)`. `stdio` and `sse` stay behind the adapter. `kind: bidi` with
+  `tool_executor` raises `AgentConfigError`. `BidiAgent` is imported from `strands.bidi`.
+- **`strands-agents-evals` accepts 0.1.13 up to (not including) 2.0** in
+  `loom-declarative-evals`. Built-in Bedrock profiles now point at Claude Haiku 5.5
+  (`economic`), Sonnet 5.5 (`default`), and Opus 5.5 (`powerful`).
+- **Breaking: unknown config keys are rejected.** Agent, app, conversation, session,
+  retry, prompt, hook, and tool models use `extra="forbid"`. A typo such as `toolz`
+  fails at load time and suggests the closest field. `version` is now a real field
+  on agent YAML (the `loom agent new` template already writes it).
+- **Per-agent `conversation` is honored.** An agent YAML `conversation` overrides
+  `app.yml`. `kind: bidi` rejects `conversation`.
 
 - **`region` removed from `loom.toml`; it lives only in `app.yml` now.** `loom.toml`
   is project layout/bootstrap (the workspace locator); `region` is a runtime/infra

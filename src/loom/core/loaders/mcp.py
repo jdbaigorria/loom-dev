@@ -9,38 +9,35 @@ it opens the connection when the agent is built (``add_consumer`` + ``load_tools
 and closes it on ``agent.cleanup()`` (``remove_consumer``, ref-counted). Loom no
 longer starts, lists, or closes MCP connections itself.
 
-Transport callables come from the ``mcp`` package and are resolved through the
-ACL's ``resolve`` for version tolerance.
+Transport for ``stdio`` and ``sse`` is built in ``loom.adapters.strands.mcp``.
+``http`` is built by ``MCPClient(url=...)``, which owns the mcp 1.x/2.x differences.
 """
 
 import logging
 
 from loom.adapters import strands as sx
-from loom.adapters.strands import resolve
+from loom.adapters.strands import mcp as sx_mcp
 from loom.core.exceptions import AgentConfigError
 from loom.schemas.config.mcp import MCPServerConfig, StdioMCPServer
 
 logger = logging.getLogger(__name__)
 
 
-def _build_transport(server: MCPServerConfig):
-    """Return a transport callable (``Callable[[], AsyncContextManager]``) for ``server``."""
+def _build_client(server: MCPServerConfig):
+    """Build one unstarted ``MCPClient`` for ``server``."""
     if isinstance(server, StdioMCPServer):
-        stdio_client = resolve("mcp.client.stdio.stdio_client")
-        stdio_params_cls = resolve(
-            "mcp.StdioServerParameters", "mcp.client.stdio.StdioServerParameters"
-        )
-        params = stdio_params_cls(command=server.command, args=server.args, env=server.env)
-        return lambda: stdio_client(params)
-
-    # Remote transports (http | sse) share the url/headers shape.
-    factory = resolve(
-        "mcp.client.streamable_http.streamablehttp_client"
-        if server.transport == "http"
-        else "mcp.client.sse.sse_client"
-    )
-    url, headers = server.url, server.headers
-    return lambda: factory(url=url, headers=headers)
+        transport = sx_mcp.stdio_transport(server.command, server.args, server.env)
+        return sx.MCPClient(transport, prefix=server.name)
+    if server.transport == "http":
+        try:
+            return sx.MCPClient(url=server.url, headers=server.headers, prefix=server.name)
+        except ValueError as exc:
+            raise AgentConfigError(
+                f"Invalid MCP HTTP URL for server '{server.name}': {server.url}",
+                tip="Use an http:// or https:// URL.",
+            ) from exc
+    transport = sx_mcp.sse_transport(server.url, server.headers)
+    return sx.MCPClient(transport, prefix=server.name)
 
 
 def get_mcp_clients(servers: list[MCPServerConfig]) -> list:
@@ -67,6 +64,6 @@ def get_mcp_clients(servers: list[MCPServerConfig]) -> list:
             "or remove 'mcp_servers' from the agent YAML.",
         )
 
-    clients = [sx.MCPClient(_build_transport(server), prefix=server.name) for server in servers]
+    clients = [_build_client(server) for server in servers]
     logger.info("Prepared %d MCP client(s) as tool providers", len(clients))
     return clients

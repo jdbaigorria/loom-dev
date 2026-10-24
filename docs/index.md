@@ -1,6 +1,6 @@
 # Loom
 
-**Declarative AI agent framework** — scaffold, configure, and run agents from YAML and a single CLI, built on [Strands Agents](https://github.com/strands-agents/sdk-python).
+**Declarative AI agent framework** — scaffold, configure, and run agents from YAML and a single CLI, built on [Strands Agents](https://github.com/strands-agents/harness-sdk).
 
 > **Pre-release (v1.0.0rc1)** — APIs, CLI flags, and on-disk layouts may change without a major version bump. Feedback and issue reports are welcome.
 
@@ -82,7 +82,7 @@ Not on PyPI yet — install pinned to a [release tag](https://github.com/jdbaigo
 === "Pick extras"
     ```bash
     pip install "loom-declarative[cli] @ git+https://github.com/jdbaigorria/loom-dev@vX.Y.Z"    # CLI + wizards
-    pip install "loom-declarative[evals] @ git+https://github.com/jdbaigorria/loom-dev@vX.Y.Z"   # evaluation tooling
+    pip install "loom-declarative[evals] @ git+https://github.com/jdbaigorria/loom-dev@vX.Y.Z"   # alias of loom-declarative-evals
     pip install "loom-declarative[aws] @ git+https://github.com/jdbaigorria/loom-dev@vX.Y.Z"     # AWS/Bedrock checks
     ```
 

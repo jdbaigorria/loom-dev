@@ -15,6 +15,7 @@ _SECTION_LABELS = {
     "aws": "AWS",
     "project": "Project",
     "agents": "Agents",
+    "plugins": "CLI plugins",
 }
 
 

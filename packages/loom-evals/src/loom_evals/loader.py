@@ -21,15 +21,24 @@ Example:
         # Now ready for strands_evals.Experiment.run_evaluations(task_fn)
 """
 
+import inspect
 import logging
 
-from loom.adapters.strands.evals import Case, Evaluator, Experiment
-from loom.schemas.config.evals import CaseConfig, EvaluatorConfig, ExperimentConfig
+from loom.core.paths import build_workspace_paths
 from loom.utils.loaders import load_config
-
-from ..paths import build_workspace_paths
+from loom_evals.adapters.strands_evals import Case, Evaluator, Experiment
+from loom_evals.schemas import CaseConfig, EvaluatorConfig, ExperimentConfig
 
 logger = logging.getLogger(__name__)
+
+# Names Loom assigned, keyed by evaluator id. Vendor models often reject
+# arbitrary attributes, so the name cannot live on the instance.
+_EVALUATOR_NAMES: dict[int, str] = {}
+
+
+def evaluator_loom_name(evaluator: object) -> str | None:
+    """Return the name Loom assigned when it built ``evaluator``."""
+    return _EVALUATOR_NAMES.get(id(evaluator))
 
 
 def _load_experiment(name: str) -> ExperimentConfig:
@@ -153,7 +162,7 @@ def _to_evaluator(evaluators_cfg: list[EvaluatorConfig]) -> list[Evaluator]:
         TypeError: If evaluator instantiation fails (e.g., missing required params).
         KeyError: If evaluator type is not in the evaluator mapping.
     """
-    from loom.adapters.strands.evals import (
+    from loom_evals.adapters.strands_evals import (
         FaithfulnessEvaluator,
         GoalSuccessRateEvaluator,
         HelpfulnessEvaluator,
@@ -184,11 +193,19 @@ def _to_evaluator(evaluators_cfg: list[EvaluatorConfig]) -> list[Evaluator]:
     }
 
     result = []
+    used: list[str] = []
+    explicit = [e.name for e in evaluators_cfg if e.name]
+    if len(explicit) != len(set(explicit)):
+        raise ValueError(f"Evaluator names must be unique: {explicit}")
+
     for e in evaluators_cfg:
         cls = evaluator_map[e.type]
+        name = _unique_evaluator_name(e, used)
+        used.append(name)
 
-        # Always exclude 'type' (not a Strands kwarg)
-        exclude = {"type"}
+        # Always exclude 'type' (not a Strands kwarg) and Loom's own name field;
+        # name is passed below only when the constructor accepts it.
+        exclude = {"type", "name"}
 
         if e.type in no_rubric:
             exclude.add("rubric")
@@ -198,9 +215,13 @@ def _to_evaluator(evaluators_cfg: list[EvaluatorConfig]) -> list[Evaluator]:
             exclude.add("interaction_description")
 
         kwargs = e.model_dump(exclude=exclude, exclude_none=True)
+        kwargs = _kwargs_for_constructor(cls, kwargs, e)
+        if _accepts(cls, "name"):
+            kwargs["name"] = name
         try:
             evaluator = cls(**kwargs)
-            logger.debug("Evaluator '%s' instantiated (kwargs=%s)", e.type, list(kwargs.keys()))
+            _EVALUATOR_NAMES[id(evaluator)] = name
+            logger.debug("Evaluator '%s' instantiated (kwargs=%s)", name, list(kwargs.keys()))
             result.append(evaluator)
         except TypeError as te:
             logger.error(
@@ -214,3 +235,41 @@ def _to_evaluator(evaluators_cfg: list[EvaluatorConfig]) -> list[Evaluator]:
 
     logger.debug("Loaded %d evaluator(s)", len(result))
     return result
+
+
+def _unique_evaluator_name(cfg: EvaluatorConfig, used: list[str]) -> str:
+    if cfg.name:
+        return cfg.name
+    name: str = cfg.type
+    n = 2
+    while name in used:
+        name = f"{cfg.type}_{n}"
+        n += 1
+    return name
+
+
+def _accepts(cls: type, param: str) -> bool:
+    params = inspect.signature(cls).parameters
+    if any(p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values()):
+        return True
+    return param in params
+
+
+def _kwargs_for_constructor(cls: type, kwargs: dict, cfg: EvaluatorConfig) -> dict:
+    """Drop kwargs the installed evaluator constructor does not accept."""
+    params = inspect.signature(cls).parameters
+    if any(p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values()):
+        return kwargs
+    accepted = set(params) - {"self"}
+    kept = {}
+    for key, value in kwargs.items():
+        if key in accepted:
+            kept[key] = value
+            continue
+        if key in cfg.model_fields_set:
+            logger.warning(
+                "Evaluator '%s' does not support %r on this strands-agents-evals version; ignoring it.",
+                cfg.type,
+                key,
+            )
+    return kept

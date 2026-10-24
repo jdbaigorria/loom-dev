@@ -24,10 +24,19 @@ jobs:
           python-version: "3.14"
 
       - name: Run ruff (lint)
-        run: uv run ruff check src/ tests/
+        run: uv run ruff check src/ tests/ packages/
 
       - name: Run ruff (format)
-        run: uv run ruff format --check src/ tests/
+        run: uv run ruff format --check src/ tests/ packages/
+
+      - name: Reject NTFS-invalid paths
+        run: |
+          bad=$(git ls-files | grep -E '[<>:"|?*]' || true)
+          if [ -n "$bad" ]; then
+            echo "::error::tracked path contains a character Windows cannot check out"
+            echo "$bad"
+            exit 1
+          fi
 
   test:
     name: Test (Python ${{ matrix.python-version }})
@@ -51,10 +60,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: uv sync --group dev --all-extras
+        run: uv sync --all-packages --group dev --all-extras
 
       - name: Run tests with coverage
-        run: uv run pytest --cov=loom --cov-report=term-missing --cov-report=xml
+        run: uv run pytest --cov=loom --cov=loom_evals --cov-report=term-missing --cov-report=xml
 
       - name: Upload coverage report
         uses: codecov/codecov-action@v5
@@ -62,6 +71,28 @@ jobs:
         with:
           files: coverage.xml
           fail_ci_if_error: false
+
+  test-windows:
+    name: Test (Windows, Python 3.14)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install dependencies
+        run: uv sync --all-packages --group dev --all-extras
+
+      - name: Run tests
+        run: uv run pytest -q
 
   type-check:
     name: Type Check
@@ -80,10 +111,10 @@ jobs:
           python-version: "3.14"
 
       - name: Install dependencies
-        run: uv sync --group dev --all-extras
+        run: uv sync --all-packages --group dev --all-extras
 
       - name: Run mypy
-        run: uv run mypy src/loom
+        run: uv run mypy src/loom packages/loom-evals/src/loom_evals
 
   package:
     name: Package smoke test
@@ -104,20 +135,25 @@ jobs:
         with:
           python-version: "3.14"
 
-      - name: Build wheel
-        run: uv build --wheel
+      - name: Build wheels
+        run: uv build --all-packages --wheel
 
-      - name: Install wheel into a clean venv
-        # The CLI lives behind the [cli] extra, so `loom init` below needs it.
+      - name: Install wheels into a clean venv
+        # The CLI lives behind the [cli] extra. [evals] is the alias that installs
+        # loom-declarative-evals from the wheel we just built.
         run: |
           uv venv /tmp/loom-smoke
-          uv pip install --python /tmp/loom-smoke/bin/python "$(echo dist/*.whl)[cli]"
+          uv pip install --python /tmp/loom-smoke/bin/python --find-links dist "loom-declarative[cli,evals]"
 
-      - name: Templates are bundled in the wheel
+      - name: Templates are bundled in the wheels
         run: |
-          n=$(unzip -l dist/*.whl | grep -cE 'loom/templates/.*\.(j2|toml|md)$')
-          echo "bundled template files: $n"
-          test "$n" -gt 0 || { echo "::error::no scaffolding templates in wheel"; exit 1; }
+          core=$(ls dist/loom_declarative-*.whl)
+          evals=$(ls dist/loom_declarative_evals-*.whl)
+          n=$(unzip -l "$core" | grep -cE 'loom/templates/.*\.(j2|toml|md)$')
+          echo "bundled core template files: $n"
+          test "$n" -gt 0 || { echo "::error::no scaffolding templates in core wheel"; exit 1; }
+          unzip -l "$evals" | grep -q 'loom_evals/templates/evals.yml.j2' \
+            || { echo "::error::evals template missing from evals wheel"; exit 1; }
 
       - name: loom init scaffolds a real project
         run: |
@@ -128,3 +164,34 @@ jobs:
           test -f warp/config/app.yml || { echo "::error::loom init produced no app.yml"; exit 1; }
           echo "loom init scaffolded:"
           find . -type f | sort
+
+      - name: loom evals is provided by the plugin wheel
+        run: /tmp/loom-smoke/bin/loom evals --help
+
+  core-without-evals:
+    name: Core without evals
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install the core without the evals package
+        run: uv sync --group dev --extra cli --extra aws --extra tools
+
+      - name: Core suite passes and the CLI does not list evals
+        run: |
+          uv run pytest tests examples
+          uv run loom --help | tee /tmp/loom-help.txt
+          if grep -q 'evals' /tmp/loom-help.txt; then
+            echo "::error::loom --help lists evals without the plugin installed"
+            exit 1
+          fi

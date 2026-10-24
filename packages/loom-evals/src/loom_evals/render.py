@@ -86,7 +86,11 @@ def _build_results_table(reports: list) -> Table:
     table.add_column(width=6, justify="right")
     table.add_column(ratio=1)
 
-    for report in reports:
+    for item in reports:
+        if isinstance(item, tuple) and len(item) == 2 and isinstance(item[0], str):
+            name, report = item
+        else:
+            name, report = getattr(item, "evaluator_name", "unknown"), item
         score = report.overall_score
         passed = sum(report.test_passes)
         total = len(report.test_passes)
@@ -94,7 +98,7 @@ def _build_results_table(reports: list) -> Table:
 
         table.add_row(
             "",
-            f"[{color} bold]{report.evaluator_name}[/]",
+            f"[{color} bold]{name}[/]",
             f"[{color}]{score:.2f}[/]",
             f"[dim]({passed}/{total} passed)[/dim]",
         )

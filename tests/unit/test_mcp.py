@@ -61,15 +61,12 @@ class TestMCPLoader:
             RemoteMCPServer(name="gh", transport="http", url="https://x/mcp"),
         ]
 
-        def factory(transport, *, prefix=None, **kwargs):
+        def factory(*args, prefix=None, **kwargs):
             client = MagicMock(name=f"MCPClient[{prefix}]")
             client.prefix = prefix
             return client
 
-        with (
-            patch("loom.core.loaders.mcp.sx.MCPClient", factory),
-            patch("loom.core.loaders.mcp._build_transport", lambda s: lambda: None),
-        ):
+        with patch("loom.core.loaders.mcp.sx.MCPClient", factory):
             clients = get_mcp_clients(servers)
 
         assert [c.prefix for c in clients] == ["fs", "gh"]
@@ -111,3 +108,35 @@ class TestMCPLifecycle:
 
         # The agent's tool registry closes any MCP connections on cleanup().
         fake_agent.cleanup.assert_called_once()
+
+
+class TestMCPContract:
+    """Real MCPClient construction. Building a client does not connect."""
+
+    def test_http_sse_and_stdio_build_real_clients(self):
+        from loom.adapters.strands import MCPClient
+
+        servers = [
+            _adapter.validate_python(
+                {
+                    "name": "gh",
+                    "transport": "http",
+                    "url": "https://mcp.example.com",
+                    "headers": {"Authorization": "Bearer x"},
+                }
+            ),
+            _adapter.validate_python(
+                {"name": "sse", "transport": "sse", "url": "https://mcp.example.com/sse"}
+            ),
+            _adapter.validate_python({"name": "fs", "transport": "stdio", "command": "npx"}),
+        ]
+        clients = get_mcp_clients(servers)
+        assert [type(c) for c in clients] == [MCPClient, MCPClient, MCPClient]
+        assert [c._prefix for c in clients] == ["gh", "sse", "fs"]
+
+    def test_invalid_http_scheme_is_agent_config_error(self):
+        server = _adapter.validate_python(
+            {"name": "gh", "transport": "http", "url": "ftp://mcp.example.com"}
+        )
+        with pytest.raises(AgentConfigError, match="Invalid MCP"):
+            get_mcp_clients([server])

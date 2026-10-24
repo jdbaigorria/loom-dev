@@ -2,12 +2,13 @@
 
 from typing import Any
 
-from pydantic import BaseModel, model_validator
+from pydantic import model_validator
 
 from ._validators import parse_single_key_dict
+from .strict import StrictConfig
 
 
-class HookConfig(BaseModel):
+class HookConfig(StrictConfig):
     """Configuration for a single lifecycle hook attached to an agent."""
 
     name: str

@@ -173,4 +173,6 @@ List of MCP server configs. Two transports:
 | `sequential` | Tool calls run one by one |
 | *(omitted)* | Strands default |
 
+`kind: bidi` does not accept `tool_executor`. Strands 1.57.2 removed that argument from `BidiAgent`, and Loom raises `AgentConfigError` instead of forwarding it.
+
 Feature-detected: on a Strands build without pluggable executors, setting this field raises a `LoomStrandsCompatError` at load time.

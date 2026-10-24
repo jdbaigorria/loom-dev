@@ -813,9 +813,7 @@ class TestSessionLoader:
 
         get_session_manager(session_config, "test-session-id")
 
-        mock_cls.assert_called_once_with(
-            session_id="test-session-id", storage_dir=".loom/sessions"
-        )
+        mock_cls.assert_called_once_with(session_id="test-session-id", storage_dir=".loom/sessions")
 
     def test_proveedor_s3_crea_s3_session_manager(self, mocker):
         """Bonus: provider='s3' → instancia S3SessionManager"""

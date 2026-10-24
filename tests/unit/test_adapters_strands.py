@@ -15,7 +15,7 @@ ImportError surfacing deep inside a loader at runtime.
 import pytest
 
 from loom.adapters import strands as sx
-from loom.adapters.strands import capabilities, evals
+from loom.adapters.strands import capabilities
 from loom.adapters.strands._resolve import LoomStrandsCompatError, is_available, resolve
 
 # Symbols that may be absent on older Strands (multi-agent primitives and tool
@@ -43,10 +43,6 @@ class TestCoreSurface:
             value = getattr(sx, name)
             assert value is None or isinstance(value, type)
 
-    def test_all_eval_symbols_resolve(self):
-        missing = [name for name in evals.__all__ if getattr(evals, name) is None]
-        assert missing == [], f"Unresolved strands_evals symbols (update the ACL): {missing}"
-
     def test_export_list_matches_module_attributes(self):
         for name in sx.__all__:
             assert hasattr(sx, name), f"{name} listed in __all__ but missing from module"
@@ -63,7 +59,7 @@ class TestResolve:
 
     def test_resolves_submodule_when_attr_absent(self):
         # tools_use_extractor is a submodule, not an attribute of the package.
-        mod = resolve("strands_evals.extractors.tools_use_extractor")
+        mod = resolve("strands.tools.decorator")
         assert mod is not None
 
     def test_optional_miss_returns_none(self):
@@ -96,3 +92,21 @@ class TestCapabilities:
             "bidi",
         }
         assert all(isinstance(v, bool) for v in snap.values())
+
+
+def test_bidi_import_is_not_the_deprecated_path():
+    import subprocess
+    import sys
+
+    subprocess.check_call(
+        [
+            sys.executable,
+            "-c",
+            "import warnings; warnings.simplefilter('error', DeprecationWarning); "
+            "import loom.adapters.strands",
+        ]
+    )
+    from loom.adapters.strands import BidiAgent
+
+    assert BidiAgent is not None
+    assert not BidiAgent.__module__.startswith("strands.experimental")

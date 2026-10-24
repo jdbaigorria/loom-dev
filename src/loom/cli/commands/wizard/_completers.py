@@ -7,6 +7,9 @@ safe to edit. Model availability ultimately depends on your account/region.
 
 # Bedrock model ids offered as autocomplete hints in `loom agent new --interactive`.
 MODEL_IDS: dict[str, str | None] = {
+    "anthropic.claude-sonnet-5-5": None,
+    "anthropic.claude-haiku-5-5": None,
+    "anthropic.claude-opus-5-5": None,
     "anthropic.claude-sonnet-4-20250514-v1:0": None,
     "anthropic.claude-haiku-4-5-20251001-v1:0": None,
     "anthropic.claude-sonnet-4-6": None,

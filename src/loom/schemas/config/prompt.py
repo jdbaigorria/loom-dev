@@ -8,10 +8,12 @@ TODO:
 
 from typing import Any
 
-from pydantic import BaseModel, model_validator
+from pydantic import model_validator
+
+from .strict import StrictConfig
 
 
-class PromptConfig(BaseModel):
+class PromptConfig(StrictConfig):
     prompt: str
     context: str | None = None
     variables: dict[str, Any] | None = None

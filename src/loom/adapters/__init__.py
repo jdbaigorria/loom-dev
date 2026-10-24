@@ -1,7 +1,8 @@
 """loom.adapters — Anti-corruption layer between Loom and external SDKs.
 
 Subpackages here are the **only** place in Loom allowed to import third-party
-agent runtimes (currently ``strands`` and ``strands_evals``). The rest of the
+agent runtimes (currently ``strands``). The evaluation stack lives in the
+``loom-declarative-evals`` package. The rest of the
 codebase imports the symbols it needs from ``loom.adapters.strands`` instead of
 reaching into the vendor packages directly.
 

@@ -1,24 +1,26 @@
 from typing import Annotated, Any, Literal, Self
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import Field, model_validator
+
+from .strict import StrictConfig
 
 # Conversation strategies
 
 
-class SummarizationAgentConfig(BaseModel):
+class SummarizationAgentConfig(StrictConfig):
     # None → the loader uses the 'economic' model profile (no hardcoded model id).
     model_id: str | None = None
     temperature: float = 0.1
     max_tokens: int = 1024
 
 
-class SlidingWindowConfig(BaseModel):
+class SlidingWindowConfig(StrictConfig):
     window_size: int = 10
     should_truncate_results: bool = True
     per_turn: bool | int = False
 
 
-class SummarizingConfig(BaseModel):
+class SummarizingConfig(StrictConfig):
     summary_ratio: float = 0.3
     preserve_recent_messages: int = 10
     summarization_agent: SummarizationAgentConfig | None = None
@@ -35,22 +37,22 @@ class SummarizingConfig(BaseModel):
         return self
 
 
-class NullStrategy(BaseModel):
+class NullStrategy(StrictConfig):
     strategy: Literal["null"]
     config: None = None
 
 
-class SlidingWindowsStrategy(BaseModel):
+class SlidingWindowsStrategy(StrictConfig):
     strategy: Literal["sliding_window"]
     config: SlidingWindowConfig
 
 
-class SummarizingStrategy(BaseModel):
+class SummarizingStrategy(StrictConfig):
     strategy: Literal["summarizing"]
     config: SummarizingConfig
 
 
-class CustomStrategy(BaseModel):
+class CustomStrategy(StrictConfig):
     """Conversation manager backed by a user-provided ``ConversationManager`` subclass.
 
     Loom ships ``null``/``sliding_window``/``summarizing``; any other strategy

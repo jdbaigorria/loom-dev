@@ -16,7 +16,7 @@ Loom splits its dependencies into a slim runtime core and optional extras:
 |---|---|---|
 | *(none)* | Core runtime only | Embedding Loom in your app |
 | `[cli]` | CLI, wizards, templates (typer, inquirerpy, jinja2, rich) | Authoring agents |
-| `[evals]` | Evaluation tooling (strands-agents-evals) | Running evals |
+| `[evals]` | Alias that installs `loom-declarative-evals` | Running evals |
 | `[aws]` | `boto3` for `loom doctor --aws` | AWS/Bedrock checks |
 | `[all]` | Everything above | Full authoring experience |
 

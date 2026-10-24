@@ -2,16 +2,15 @@
 
 from typing import Literal
 
-from pydantic import BaseModel
-
 from loom.config.defaults import DEFAULT_REGION
 
 from .conversations import ConversationConfig
 from .sessions import SessionConfig
+from .strict import StrictConfig
 from .telemetry import TelemetryConfig
 
 
-class AppConfig(BaseModel):
+class AppConfig(StrictConfig):
     """Global application settings loaded from ``app.yml``."""
 
     # No persistence by default: a factory should not silently write conversation

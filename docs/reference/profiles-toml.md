@@ -39,9 +39,9 @@ my_provider = "my.pkg.CustomModel"
 
 | Name | Provider | Model ID |
 |---|---|---|
-| `default` | Bedrock | `anthropic.claude-3-5-sonnet-20241022-v2:0` |
-| `economic` | Bedrock | `anthropic.claude-3-5-haiku-20241022-v1:0` |
-| `powerful` | Bedrock | `anthropic.claude-3-5-sonnet-20241022-v2:0` |
+| `default` | Bedrock | `anthropic.claude-sonnet-5-5` |
+| `economic` | Bedrock | `anthropic.claude-haiku-5-5` |
+| `powerful` | Bedrock | `anthropic.claude-opus-5-5` |
 
 ## Built-in retry profiles
 
@@ -76,7 +76,7 @@ Now any agent can use `model: gpt4`.
 ```toml
 [model.fast]
 import_path = "strands.models.bedrock.BedrockModel"
-params      = { model_id = "anthropic.claude-3-5-haiku-20241022-v1:0" }
+params      = { model_id = "anthropic.claude-haiku-5-5" }
 ```
 
 ### Override the default model

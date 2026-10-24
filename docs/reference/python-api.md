@@ -11,9 +11,9 @@ from loom import (
     build_workflow,    # by name: build_workflow(name, session) -> (Graph/Swarm, node_agents)
     discover,          # catalog: discover() -> list[TargetInfo]
     TargetInfo,        # a buildable target (name, kind, description)
-    LoomEvals,         # evaluation runner — lazy, needs the [evals] extra
     LoomSession,       # execution identity (session_id, user_id)
 )
+from loom_evals import LoomEvals   # evaluation runner — package loom-declarative-evals
 from loom.dev import run_dev          # dev-only one-shot executor
 from loom.errors import LoomError, AgentNotFoundError, ...   # public exception surface
 from loom.ports import ConfigSource    # config-source seam (inject a source)
@@ -222,12 +222,29 @@ There is no separate `resume()` method — the agent (and its MCP connections) s
 
 ---
 
+## Plugin contract
+
+`loom-declarative-evals` is a CLI plugin. It depends on this surface of the core, which is public for plugins:
+
+| Symbol | Role |
+|---|---|
+| `loom.dev.run_dev(name, query, session, *, extras, env, kind) -> DevRun` | Run one case |
+| `DevRun.response.answer`, `.metadata.total_tokens`, `.metadata.response_time_ms`, `DevRun.agent` | Output, metrics, trajectory |
+| `WorkspacePaths.eval_file` / `eval_dir` / `eval_results_dir` | On-disk layout |
+| `loom.schemas.context.LoomSession` | Session per case |
+| `loom.utils.loaders.load_config` | Load `evals.yml` |
+| `loom.errors.LoomError`, `AgentNotFoundError` | Errors |
+| `loom.utils.ui` console helpers | CLI output |
+| `loom.adapters.strands.resolve`, `LoomStrandsCompatError` | Vendor ACL |
+
+A plugin advertises a Typer app under the `loom.cli` entry-point group. `loom doctor` lists installed plugins.
+
 ## LoomEvals
 
-Requires the `[evals]` extra. Loaded lazily — `import loom` does not pull in `strands_evals`.
+Ships in `loom-declarative-evals` (`pip install loom-declarative-evals`, or the `[evals]` extra, which is an alias). `from loom import LoomEvals` still works and emits a `DeprecationWarning`.
 
 ```python
-from loom import LoomEvals
+from loom_evals import LoomEvals
 
 evals = LoomEvals("my_agent")
 results = evals.run()

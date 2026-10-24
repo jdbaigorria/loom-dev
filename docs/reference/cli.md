@@ -145,7 +145,7 @@ loom workflow run <name> --env staging
 
 ## loom evals
 
-Requires the `[evals]` extra.
+Provided by the `loom-declarative-evals` package. Install it directly, or via the `[evals]` extra (an alias).
 
 ### new
 

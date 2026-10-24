@@ -116,6 +116,29 @@ class TestWorkflowBuilder:
         assert str(result.status) == "Status.COMPLETED"
         assert set(result.results) == {"triage", "billing"}
 
+    def test_graph_execution_limit_suppresses_unbounded_warning(self, session):
+        import warnings
+
+        import loom.core.workflow_builder as wb
+
+        cfg = GraphWorkflowConfig(
+            name="bounded",
+            nodes={"a": GraphNodeConfig(agent="a")},
+            max_node_executions=5,
+            execution_timeout=30,
+            node_timeout=10,
+            reset_on_revisit=True,
+        )
+        with patch.object(wb, "build_agent", _fake_build_agent):
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                graph, _ = wb._build_graph(cfg, session, "dev", FileConfigSource())
+        assert not any("unbounded" in str(item.message) for item in caught)
+        assert graph.max_node_executions == 5
+        assert graph.execution_timeout == 30
+        assert graph.node_timeout == 10
+        assert graph.reset_on_revisit is True
+
     def test_build_swarm_runs(self, session):
         import loom.core.workflow_builder as wb
 

@@ -4,10 +4,11 @@ Loom has a built-in evaluation framework that lets you define test cases in YAML
 
 ## Prerequisites
 
-Install the evals extra:
+The recommended install is the evals package itself. `[evals]` on the core is a compatibility alias for the same package.
 
 ```bash
-pip install "loom-declarative[evals]"
+pip install loom-declarative-evals
+# equivalent: pip install "loom-declarative[evals]"
 ```
 
 ## Setup
@@ -56,14 +57,16 @@ loom evals run my_agent
 
 | Type | Description | Fields |
 |---|---|---|
-| `output` | Evaluates the final answer against a rubric | `rubric` |
-| `trajectory` | Evaluates which tools were called and in what order | `rubric`, `trajectory_description` |
-| `interactions` | Evaluates the full conversation | `rubric`, `interaction_description` |
-| `helpfulness` | Measures how helpful the response is | *(no rubric needed)* |
-| `faithfulness` | Checks factual grounding | *(no rubric needed)* |
-| `goal_success_rate` | Whether the goal was achieved | *(no rubric needed)* |
-| `tool_selection` | Accuracy of tool selection | *(no rubric needed)* |
-| `tool_parameter` | Accuracy of tool parameters | *(no rubric needed)* |
+| `output` | Evaluates the final answer against a rubric | `rubric`, optional `name` |
+| `trajectory` | Evaluates which tools were called and in what order | `rubric`, `trajectory_description`, optional `name` |
+| `interactions` | Evaluates the full conversation | `rubric`, `interaction_description`, optional `name` |
+| `helpfulness` | Measures how helpful the response is | optional `name` |
+| `faithfulness` | Checks factual grounding | optional `name` |
+| `goal_success_rate` | Whether the goal was achieved | optional `name` |
+| `tool_selection` | Accuracy of tool selection | optional `name` |
+| `tool_parameter` | Accuracy of tool parameters | optional `name` |
+
+`name` labels the evaluator in the report. It must be unique inside one `evals.yml`. Omit it and Loom derives a name from `type`, adding `_2`, `_3`, … when the same type appears more than once. On `strands-agents-evals` 1.x the name is also passed to the evaluator constructor so two instances of the same type stay distinct.
 
 ### Output evaluator
 
@@ -125,7 +128,7 @@ warp/agents/my_agent/evals/
 ## Python API
 
 ```python
-from loom import LoomEvals
+from loom_evals import LoomEvals
 
 evals = LoomEvals("my_agent")
 results = evals.run()

@@ -1,7 +1,7 @@
 """
 tests/unit/test_evals_service.py
 
-Cubre loom.services.evals_service:
+Cubre loom_evals.service:
   - run_evals()
   - get_history()
   - check_regression()
@@ -15,13 +15,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from loom.core.exceptions import (
-    AgentNotFoundError,
+from loom.core.exceptions import AgentNotFoundError
+from loom_evals.exceptions import (
     EvalsAlreadyExistsError,
     EvalsNotFoundError,
     EvalsRunError,
 )
-from loom.services.evals_service import (
+from loom_evals.service import (
     check_regression,
     get_failed_cases,
     get_history,
@@ -70,14 +70,14 @@ class TestNewEvals:
     def test_agente_no_existe_lanza_agent_not_found(self, tmp_path):
         """EVL-SVC-N01: agent_dir no existe → AgentNotFoundError"""
         mock_p = self._mock_workspace(agent_exists=False, evals_exists=False, tmp_path=tmp_path)
-        with patch("loom.services.evals_service.build_workspace_paths", return_value=mock_p):
+        with patch("loom_evals.service.build_workspace_paths", return_value=mock_p):
             with pytest.raises(AgentNotFoundError):
                 new_evals("my_agent")
 
     def test_evals_yml_ya_existe_lanza_evals_already_exists(self, tmp_path):
         """EVL-SVC-N02: evals.yml ya existe → EvalsAlreadyExistsError"""
         mock_p = self._mock_workspace(agent_exists=True, evals_exists=True, tmp_path=tmp_path)
-        with patch("loom.services.evals_service.build_workspace_paths", return_value=mock_p):
+        with patch("loom_evals.service.build_workspace_paths", return_value=mock_p):
             with pytest.raises(EvalsAlreadyExistsError) as exc_info:
                 new_evals("my_agent")
         assert "my_agent" in str(exc_info.value)
@@ -85,7 +85,7 @@ class TestNewEvals:
     def test_crea_evals_yml_con_nombre_del_agente(self, tmp_path):
         """EVL-SVC-N03: agente existe y sin evals.yml → crea el archivo con el nombre del agente"""
         mock_p = self._mock_workspace(agent_exists=True, evals_exists=False, tmp_path=tmp_path)
-        with patch("loom.services.evals_service.build_workspace_paths", return_value=mock_p):
+        with patch("loom_evals.service.build_workspace_paths", return_value=mock_p):
             result = new_evals("my_agent")
 
         assert result.exists()
@@ -95,7 +95,7 @@ class TestNewEvals:
     def test_retorna_path_del_archivo_creado(self, tmp_path):
         """EVL-SVC-N04: new_evals exitoso → retorna Path al evals.yml creado"""
         mock_p = self._mock_workspace(agent_exists=True, evals_exists=False, tmp_path=tmp_path)
-        with patch("loom.services.evals_service.build_workspace_paths", return_value=mock_p):
+        with patch("loom_evals.service.build_workspace_paths", return_value=mock_p):
             result = new_evals("my_agent")
 
         assert isinstance(result, Path)
@@ -111,7 +111,7 @@ class TestRunEvals:
     def test_evals_yml_no_existe_lanza_evals_not_found(self):
         """EVL-SVC01: eval_file no existe → EvalsNotFoundError con nombre del agente"""
         with patch(
-            "loom.services.evals_service.build_workspace_paths",
+            "loom_evals.service.build_workspace_paths",
             return_value=_mock_workspace_paths(exists=False),
         ):
             with pytest.raises(EvalsNotFoundError) as exc_info:
@@ -126,10 +126,10 @@ class TestRunEvals:
 
         with (
             patch(
-                "loom.services.evals_service.build_workspace_paths",
+                "loom_evals.service.build_workspace_paths",
                 return_value=_mock_workspace_paths(exists=True),
             ),
-            patch("loom.services.evals_service.LoomEvals", return_value=mock_evals),
+            patch("loom_evals.service.LoomEvals", return_value=mock_evals),
         ):
             result = run_evals("my_agent")
 
@@ -143,10 +143,10 @@ class TestRunEvals:
 
         with (
             patch(
-                "loom.services.evals_service.build_workspace_paths",
+                "loom_evals.service.build_workspace_paths",
                 return_value=_mock_workspace_paths(exists=True),
             ),
-            patch("loom.services.evals_service.LoomEvals", return_value=mock_evals),
+            patch("loom_evals.service.LoomEvals", return_value=mock_evals),
         ):
             with pytest.raises(EvalsRunError) as exc_info:
                 run_evals("my_agent")
@@ -163,7 +163,7 @@ class TestGetHistory:
     def test_evals_yml_no_existe_lanza_evals_not_found(self):
         """EVL-SVC04: eval_file no existe → EvalsNotFoundError"""
         with patch(
-            "loom.services.evals_service.build_workspace_paths",
+            "loom_evals.service.build_workspace_paths",
             return_value=_mock_workspace_paths(exists=False),
         ):
             with pytest.raises(EvalsNotFoundError):
@@ -177,10 +177,10 @@ class TestGetHistory:
 
         with (
             patch(
-                "loom.services.evals_service.build_workspace_paths",
+                "loom_evals.service.build_workspace_paths",
                 return_value=_mock_workspace_paths(exists=True),
             ),
-            patch("loom.services.evals_service.LoomEvals", return_value=mock_evals),
+            patch("loom_evals.service.LoomEvals", return_value=mock_evals),
         ):
             result = get_history("my_agent")
 
@@ -197,7 +197,7 @@ class TestCheckRegression:
     def test_evals_yml_no_existe_lanza_evals_not_found(self):
         """EVL-SVC06: eval_file no existe → EvalsNotFoundError"""
         with patch(
-            "loom.services.evals_service.build_workspace_paths",
+            "loom_evals.service.build_workspace_paths",
             return_value=_mock_workspace_paths(exists=False),
         ):
             with pytest.raises(EvalsNotFoundError):
@@ -211,10 +211,10 @@ class TestCheckRegression:
 
         with (
             patch(
-                "loom.services.evals_service.build_workspace_paths",
+                "loom_evals.service.build_workspace_paths",
                 return_value=_mock_workspace_paths(exists=True),
             ),
-            patch("loom.services.evals_service.LoomEvals", return_value=mock_evals),
+            patch("loom_evals.service.LoomEvals", return_value=mock_evals),
         ):
             result = check_regression("my_agent", threshold=0.1)
 
@@ -231,7 +231,7 @@ class TestGetFailedCases:
     def test_evals_yml_no_existe_lanza_evals_not_found(self):
         """EVL-SVC08: eval_file no existe → EvalsNotFoundError"""
         with patch(
-            "loom.services.evals_service.build_workspace_paths",
+            "loom_evals.service.build_workspace_paths",
             return_value=_mock_workspace_paths(exists=False),
         ):
             with pytest.raises(EvalsNotFoundError):
@@ -244,10 +244,10 @@ class TestGetFailedCases:
 
         with (
             patch(
-                "loom.services.evals_service.build_workspace_paths",
+                "loom_evals.service.build_workspace_paths",
                 return_value=_mock_workspace_paths(exists=True),
             ),
-            patch("loom.services.evals_service.LoomEvals", return_value=mock_evals),
+            patch("loom_evals.service.LoomEvals", return_value=mock_evals),
         ):
             get_failed_cases("my_agent")
 
@@ -261,10 +261,10 @@ class TestGetFailedCases:
 
         with (
             patch(
-                "loom.services.evals_service.build_workspace_paths",
+                "loom_evals.service.build_workspace_paths",
                 return_value=_mock_workspace_paths(exists=True),
             ),
-            patch("loom.services.evals_service.LoomEvals", return_value=mock_evals),
+            patch("loom_evals.service.LoomEvals", return_value=mock_evals),
         ):
             get_failed_cases("my_agent", reports=fake_reports)
 

@@ -11,10 +11,12 @@ profile by name or inlines its own ``RetryConfig``::
 
 from typing import Self
 
-from pydantic import BaseModel, model_validator
+from pydantic import model_validator
+
+from .strict import StrictConfig
 
 
-class RetryConfig(BaseModel):
+class RetryConfig(StrictConfig):
     """Tuning parameters for a model retry strategy."""
 
     max_attempts: int = 3

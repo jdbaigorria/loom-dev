@@ -90,16 +90,14 @@ class TestAgentConfigDefaults:
             "AgentConfig.session was removed; session is app-level config only"
         )
 
-    def test_no_conversation_field(self) -> None:
-        """COV-02d: AgentConfig no longer has 'conversation' (removed in BUG-2 fix)."""
-        assert not hasattr(AgentConfig(name="x"), "conversation"), (
-            "AgentConfig.conversation was removed; conversation is app-level config only"
-        )
+    def test_conversation_defaults_to_none(self) -> None:
+        """Per-agent conversation is optional and falls back to app.yml when unset."""
+        assert AgentConfig(name="x").conversation is None
 
-    def test_unknown_field_is_silently_ignored(self) -> None:
-        """COV-02e: extra fields in YAML (e.g. 'version:') are silently ignored."""
-        config = AgentConfig(name="my_agent", version="0.1.0")  # type: ignore[call-arg]
-        assert config.name == "my_agent"
+    def test_version_is_accepted(self) -> None:
+        """The agent template writes version; it is a real field, not an extra key."""
+        config = AgentConfig(name="my_agent", version="0.1.0")
+        assert config.version == "0.1.0"
 
 
 # ---------------------------------------------------------------------------

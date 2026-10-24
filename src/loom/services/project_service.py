@@ -8,7 +8,7 @@ from loom.core.exceptions import (
     ProjectNotInitializedError,
     ValidationResult,
 )
-from loom.core.paths import INIT_TEMPLATES, build_workspace_paths
+from loom.core.paths import INIT_TEMPLATES, build_workspace_paths, workspace_dir_name
 from loom.services.agent_service import get_all_agents, validate_agent
 from loom.utils.render import apply_template
 
@@ -33,6 +33,7 @@ def run_doctor(check_aws: bool = True) -> dict[str, list[ValidationResult]]:
         "aws": [],
         "project": [],
         "agents": [],
+        "plugins": [],
     }
 
     # System
@@ -149,7 +150,33 @@ def run_doctor(check_aws: bool = True) -> dict[str, list[ValidationResult]]:
     except (ProjectNotInitializedError, NoAgentsFoundError):
         pass  # no project or no agents: empty section, not a doctor error
 
+    from loom.cli.plugins import cli_plugin_status
+
+    for name, dist, dist_version, error in cli_plugin_status():
+        label = f"{name} ({dist} {dist_version})"
+        if error is None:
+            results["plugins"].append(ValidationResult(ok=True, message=label))
+        else:
+            results["plugins"].append(
+                ValidationResult(ok=False, message=label, tip=f"{type(error).__name__}: {error}")
+            )
+
     return results
+
+
+def _with_workspace_dir(context: dict) -> dict:
+    """Inject ``workspace_dir`` so every caller of ``loom init`` uses one name.
+
+    The interactive wizard stores the name under ``app.workspace_name``. A bare
+    context (or none) falls back to ``warp``.
+    """
+    app = context.get("app")
+    raw = app.get("workspace_name") if isinstance(app, dict) else None
+    if not isinstance(raw, str):
+        raw = context.get("workspace_name")
+    enriched = dict(context)
+    enriched["workspace_dir"] = workspace_dir_name(raw if isinstance(raw, str) else None)
+    return enriched
 
 
 def init_project(context: dict | None = None, force: bool = False) -> list[Path]:
@@ -199,7 +226,7 @@ def init_project(context: dict | None = None, force: bool = False) -> list[Path]
         raise ProjectAlreadyInitializedError()
 
     try:
-        context = context or {}
+        context = _with_workspace_dir(context or {})
 
         created_files = apply_template(INIT_TEMPLATES, ws.project_root, context)
         ws.metadata_dir.mkdir(parents=True, exist_ok=True)
