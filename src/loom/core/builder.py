@@ -57,7 +57,7 @@ from .loaders.storage import get_storage
 from .loaders.tool import get_tools
 from .loaders.tool_executor import get_tool_executor
 from .paths import WorkspacePaths
-from .telemetry import setup_telemetry
+from .telemetry import agent_telemetry_attributes, setup_telemetry
 
 logger = logging.getLogger(__name__)
 
@@ -205,6 +205,15 @@ def build(
         "storage": storage,
     }
 
+    trace_attributes, baggage_attributes = agent_telemetry_attributes(
+        app_config.telemetry, session_id=session.session_id, user_id=session.user_id
+    )
+    if agent_config.kind == "bidi" and (trace_attributes is not None or baggage_attributes is not None):
+        raise AgentConfigError(
+            "trace_attributes and baggage_attributes are not supported when kind is 'bidi'.",
+            tip="Remove them from telemetry, or run this agent with kind: agent.",
+        )
+
     if agent_config.kind == "bidi":
         return _build_bidi(agent_config, shared_params)
 
@@ -239,6 +248,13 @@ def build(
             tip="Set conversation: none for this model.",
         )
     skip_conversation = context_manager is not None or stateful
+    if (trace_attributes is not None or baggage_attributes is not None) and not (
+        capabilities.agent_accepts("trace_attributes") and capabilities.agent_accepts("baggage_attributes")
+    ):
+        raise AgentConfigError(
+            "The installed Strands version does not accept trace or baggage attributes.",
+            tip="Requiere strands-agents >= 1.60 for baggage_attributes.",
+        )
     output_class = None
     output_prompt = None
     if agent_config.output:
@@ -284,6 +300,8 @@ def build(
         )
         if agent_config.background_tasks is not None
         else None,
+        "trace_attributes": trace_attributes,
+        "baggage_attributes": baggage_attributes,
     }
 
     clean_params = {k: v for k, v in {**shared_params, **agent_only}.items() if v is not None}

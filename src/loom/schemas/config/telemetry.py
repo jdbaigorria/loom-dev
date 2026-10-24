@@ -19,3 +19,5 @@ class TelemetryConfig(BaseModel):
     exporter: Literal["otlp", "console"] = "otlp"
     metrics: bool = False
     service_name: str | None = None
+    trace_attributes: dict[str, str] | None = None
+    baggage_attributes: dict[str, str] | None = None
