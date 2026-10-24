@@ -20,7 +20,7 @@ from .assets import (
     INTERNAL_PACKAGE_ROOT,
     TEMPLATES_DIR,
 )
-from .naming import normalize_agent_name
+from .naming import normalize_agent_name, workspace_dir_name
 from .workspace import (
     AgentPaths,
     MetadataPaths,
@@ -41,6 +41,7 @@ __all__ = [
     "WorkspacePaths",
     "build_workspace_paths",
     "normalize_agent_name",
+    "workspace_dir_name",
     "resolve_existing_agent_yaml",
     "resolve_existing_workflow_yaml",
 ]

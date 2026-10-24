@@ -1,5 +1,7 @@
 """Tests for the dev hot-reload machinery (fingerprint + cache invalidation)."""
 
+from pathlib import Path
+
 from loom.cli.commands.dev import _fingerprint
 from loom.core.reload import clear_config_caches
 
@@ -12,7 +14,7 @@ class TestFingerprint:
         (tmp_path / "ignore.log").write_text("nope")
 
         fp = _fingerprint([tmp_path])
-        names = {p.rsplit("/", 1)[-1] for p in fp}
+        names = {Path(p).name for p in fp}
         assert names == {"a.yml", "prompt.md", "tool.py"}  # .log excluded
 
     def test_changes_when_file_modified(self, tmp_path):
@@ -40,7 +42,7 @@ class TestFingerprint:
         sub.mkdir()
         (sub / "t.py").write_text("x = 1")
         fp = _fingerprint([tmp_path])
-        assert any(p.endswith("tools/t.py") for p in fp)
+        assert any(Path(p).as_posix().endswith("tools/t.py") for p in fp)
 
     def test_missing_dir_is_skipped(self, tmp_path):
         assert _fingerprint([tmp_path / "does_not_exist"]) == {}

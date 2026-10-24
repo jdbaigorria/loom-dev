@@ -1,9 +1,17 @@
-"""Agent name normalization and validation (a naming rule, not a path)."""
+"""Naming rules: agent directory segments and the init workspace directory."""
 
 import re
 import unicodedata
 
 from loom.core.exceptions import AgentConfigError
+
+
+def workspace_dir_name(workspace_name: str | None) -> str:
+    """Directory name for ``loom init``, matching the old Jinja path filter.
+
+    ``(workspace_name or "warp").lower().replace(" ", "_")``.
+    """
+    return (workspace_name or "warp").lower().replace(" ", "_")
 
 
 def normalize_agent_name(name: str) -> str:
