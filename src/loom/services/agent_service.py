@@ -218,13 +218,14 @@ def validate_agent(name: str) -> list[ValidationResult]:
     # 4. Output class is importable
     if agent_config.output:
         try:
-            from loom.core.loaders.output import get_output_class
+            from loom.core.loaders.output import get_output_class, output_target
 
-            get_output_class(agent_config.output, agent_dir)
+            class_name, _prompt = output_target(agent_config.output)
+            get_output_class(class_name, agent_dir)
             results.append(
                 ValidationResult(
                     ok=True,
-                    message=f"Output class '{agent_config.output}' importable",
+                    message=f"Output class '{class_name}' importable",
                 )
             )
         except Exception as e:

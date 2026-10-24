@@ -20,24 +20,21 @@ from loom.utils.loaders import import_attr, import_module_from_file
 logger = logging.getLogger(__name__)
 
 
-def get_output_class(output_config: str, agent_dir: Path | None) -> type[BaseModel]:
-    """Load and return the Pydantic class for the agent's structured output.
+def output_target(output_config: str | object) -> tuple[str, str | None]:
+    """Return ``(class path, optional prompt)`` for a string or ``{class, prompt}``."""
+    if isinstance(output_config, str):
+        return output_config, None
+    return output_config.output_class, output_config.prompt  # type: ignore[attr-defined]
 
-    Args:
-        output_config: Pydantic class name. Can be a dotted import
-            (``my.pkg:MyModel`` / ``my.pkg.MyModel``) or just the class name
-            (``MyModel``, searched in ``{agent_dir}/output.py``).
-        agent_dir: Agent directory where ``output.py`` is searched for a bare
-            class name. ``None`` when there is no local filesystem — only the
-            dotted-import form is resolvable then.
 
-    Returns:
-        The class (not an instance) that inherits from ``pydantic.BaseModel``.
+def get_output_class(output_config: str | object, agent_dir: Path | None) -> type[BaseModel]:
+    """Load and return the Pydantic class for the agent's structured output."""
+    class_name, _prompt = output_target(output_config)
+    return _load_output_class(class_name, agent_dir)
 
-    Raises:
-        OutputLoadError: If a local class is referenced without a filesystem
-            locator, or the module/class cannot be imported.
-    """
+
+def _load_output_class(output_config: str, agent_dir: Path | None) -> type[BaseModel]:
+    """Load a Pydantic class from a dotted path or ``{agent_dir}/output.py``."""
     if ":" in output_config or "." in output_config:
         logger.debug("Loading output class via import path: '%s'", output_config)
         try:

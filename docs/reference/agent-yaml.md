@@ -136,7 +136,15 @@ List of hook names. Each entry can be:
 
 **Default:** `null`
 
-Dotted import path to a Pydantic `BaseModel` subclass. When set, the agent returns a validated model in `AgentResponse.output`.
+Dotted import path to a Pydantic `BaseModel` subclass, or an object:
+
+```yaml
+output:
+  class: my_pkg.schemas.OrderSummary
+  prompt: Answer only with the order fields.
+```
+
+`prompt` is passed as `structured_output_prompt`. When omitted, the SDK default prompt is used. `concurrent_invocation_mode` is not exposed.
 
 ### mcp_servers
 
