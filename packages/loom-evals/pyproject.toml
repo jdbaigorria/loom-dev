@@ -1,0 +1,22 @@
+[project]
+name = "loom-declarative-evals"
+version = "1.0.0rc1"
+description = "Evaluation runner and `loom evals` CLI plugin for Loom"
+requires-python = ">=3.11"
+dependencies = [
+    "loom-declarative[cli]>=1.0.0rc1,<2",
+    "strands-agents-evals>=0.1.13,<0.2",
+]
+
+[tool.uv.sources]
+loom-declarative = { workspace = true }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+loom_evals = ["templates/*"]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"

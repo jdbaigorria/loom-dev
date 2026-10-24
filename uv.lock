@@ -2,6 +2,12 @@ version = 1
 revision = 5
 requires-python = ">=3.11"
 
+[manifest]
+members = [
+    "loom-declarative",
+    "loom-declarative-evals",
+]
+
 [[package]]
 name = "aiohappyeyeballs"
 version = "2.6.1"
@@ -1022,6 +1028,21 @@ docs = [
     { name = "mkdocs", specifier = ">=1.6.0,<2.0" },
     { name = "mkdocs-material", specifier = ">=9.5.0" },
     { name = "pymdown-extensions", specifier = ">=10.0" },
+]
+
+[[package]]
+name = "loom-declarative-evals"
+version = "1.0.0rc1"
+source = { editable = "packages/loom-evals" }
+dependencies = [
+    { name = "loom-declarative", extra = ["cli"] },
+    { name = "strands-agents-evals" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "loom-declarative", extras = ["cli"], editable = "." },
+    { name = "strands-agents-evals", specifier = ">=0.1.13,<0.2" },
 ]
 
 [[package]]
