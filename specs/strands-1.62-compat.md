@@ -6,7 +6,7 @@
 | **Fecha** | 2026-10-23 |
 | **Rama** | `fix/strands-1.62-compat` (desde `dev` @ `150f953`) |
 | **Alcance** | Capa anticorrupción (`loom.adapters.strands`), loaders de MCP / bidi / evals / workflows, dependencias, CI |
-| **Relacionado** | [`evals-package-split.md`](evals-package-split.md): evals sale del core al paquete `loom-declarative-evals`, y F4 se implementa ahí |
+| **Relacionado** | [`evals-package-split.md`](evals-package-split.md): evals sale del core al paquete `loom-declarative-evals`, y F4 se implementa ahí · [`sdk-1.62-features.md`](sdk-1.62-features.md): siguiente paso, exponer en el YAML las capacidades nuevas del SDK |
 
 ---
 
