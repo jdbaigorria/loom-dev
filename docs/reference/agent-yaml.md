@@ -188,4 +188,12 @@ plugins:
 
 `skills`, `context_offloader`, and `goal` are built in. A dotted path imports a class. A bare name loads `warp/plugins/<name>.py` and instantiates the PascalCase class. `kind: bidi` rejects `plugins`. Nothing is loaded when the field is omitted.
 
+### context
+
+```yaml
+context: auto    # auto | agentic | off
+```
+
+`off` passes `False`. A dict is forwarded as the SDK config. `import_path` builds a custom manager. When `context` is set, `conversation` must be `none` (or omitted, which resolves to `none`). A stateful model has the same rule. `kind: bidi` rejects `context`.
+
 Feature-detected: on a Strands build without pluggable executors, setting this field raises a `LoomStrandsCompatError` at load time.

@@ -38,6 +38,7 @@ from loom.schemas.config.tool import ToolConfig
 from loom.schemas.context import LoomSession
 
 from .loaders.app import resolve_env
+from .loaders.context import conversation_is_none, get_context
 from .loaders.conversation import get_conversation_manager
 from .loaders.hook import get_hooks
 from .loaders.mcp import get_mcp_clients
@@ -194,15 +195,31 @@ def build(
         if agent_config.conversation is not None
         else app_config.conversation
     )
+    context_manager = get_context(agent_config.context) if agent_config.context is not None else None
+    stateful = getattr(model, "stateful", False) is True
+    if context_manager is not None and not conversation_is_none(conversation):
+        raise AgentConfigError(
+            "context and a conversation strategy cannot be used together.",
+            tip="Set conversation: none, or remove context.",
+        )
+    if stateful and not conversation_is_none(conversation):
+        raise AgentConfigError(
+            "A stateful model cannot use a conversation strategy.",
+            tip="Set conversation: none for this model.",
+        )
+    skip_conversation = context_manager is not None or stateful
     agent_only = {
         "structured_output_model": get_output_class(agent_config.output, agent_dir)
         if agent_config.output
         else None,
         "retry_strategy": get_retry_strategy(agent_config.retry) if agent_config.retry else None,
-        "conversation_manager": get_conversation_manager(conversation) if conversation else None,
+        "conversation_manager": None
+        if skip_conversation
+        else (get_conversation_manager(conversation) if conversation else None),
         "plugins": get_plugins(agent_config.plugins, plugins_dir, config_dir)
         if agent_config.plugins
         else None,
+        "context_manager": context_manager,
     }
 
     clean_params = {k: v for k, v in {**shared_params, **agent_only}.items() if v is not None}

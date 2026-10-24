@@ -33,6 +33,8 @@ class AgentConfig(StrictConfig):
     mcp_servers: list[MCPServerConfig] | None = None
     hooks: list[HookConfig] | None = None
     plugins: list[PluginConfig] | None = None
+    # auto | agentic | off, a strategy dict, or {import_path, params}.
+    context: str | dict | None = None
     # How tools are executed within a single turn. None → Strands default
     # (concurrent). Requires a Strands build with pluggable tool executors.
     tool_executor: Literal["concurrent", "sequential"] | None = None
@@ -49,6 +51,8 @@ class AgentConfig(StrictConfig):
             raise ValueError("'conversation' is not supported when kind is 'bidi'.")
         if self.plugins is not None:
             raise ValueError("'plugins' is not supported when kind is 'bidi'.")
+        if self.context is not None:
+            raise ValueError("'context' is not supported when kind is 'bidi'.")
         if not isinstance(self.model, str):
             from loom.schemas.config.models import CustomModelConfig
 
