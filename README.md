@@ -276,7 +276,7 @@ Opinionated presets for **models**, **retry** and **conversation**, referenced b
 # warp/config/profiles.toml
 [model.fast]
 import_path = "strands.models.bedrock.BedrockModel"
-params = { model_id = "anthropic.claude-3-5-haiku-20241022-v1:0" }
+params = { model_id = "anthropic.claude-haiku-5-5" }
 
 [retry.aggressive]
 max_attempts = 6

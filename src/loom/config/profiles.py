@@ -17,7 +17,7 @@ or inlines its own config (passthrough for model, raw params for retry).
 
     [model.fast]
     import_path = "strands.models.bedrock.BedrockModel"
-    params = { model_id = "anthropic.claude-3-5-haiku-20241022-v1:0" }
+    params = { model_id = "anthropic.claude-haiku-5-5" }
 
     [retry.aggressive]
     max_attempts = 6
@@ -44,15 +44,15 @@ BUILTIN_PROFILES: dict[str, dict[str, dict[str, Any]]] = {
     "model": {
         "default": {
             "import_path": "strands.models.bedrock.BedrockModel",
-            "params": {"model_id": "anthropic.claude-3-5-sonnet-20241022-v2:0"},
+            "params": {"model_id": "anthropic.claude-sonnet-5-5"},
         },
         "economic": {
             "import_path": "strands.models.bedrock.BedrockModel",
-            "params": {"model_id": "anthropic.claude-3-5-haiku-20241022-v1:0"},
+            "params": {"model_id": "anthropic.claude-haiku-5-5"},
         },
         "powerful": {
             "import_path": "strands.models.bedrock.BedrockModel",
-            "params": {"model_id": "anthropic.claude-3-5-sonnet-20241022-v2:0"},
+            "params": {"model_id": "anthropic.claude-opus-5-5"},
         },
     },
     "retry": {

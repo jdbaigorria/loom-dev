@@ -8,6 +8,8 @@ from here.
 
 from __future__ import annotations
 
+import inspect
+
 from loom.adapters.strands import resolve
 
 # --- Core eval primitives ------------------------------------------------------
@@ -56,6 +58,23 @@ __all__ = [
     "split_reports",
     "tools_use_extractor",
 ]
+
+
+def _overall_score(report_cls: type, scores: list, detailed: list) -> float:
+    """Call ``calculate_overall_score`` with the signature this evals version ships."""
+    fn = getattr(report_cls, "calculate_overall_score", None)
+    if not callable(fn):
+        return sum(scores) / len(scores) if scores else 0.0
+    params = [
+        p
+        for p in inspect.signature(fn).parameters.values()
+        if p.name not in {"cls", "self"}
+        and p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)
+    ]
+    args: list = [scores]
+    if len(params) >= 2:
+        args.append(detailed)
+    return fn(*args)
 
 
 def split_reports(result, names: list[str]) -> list[tuple[str, object]]:
@@ -109,10 +128,7 @@ def split_reports(result, names: list[str]) -> list[tuple[str, object]]:
             if isinstance(values, list):
                 data[field] = [values[i] for i in indexes if i < len(values)]
         scores = data.get("scores") or []
-        if hasattr(report_cls, "calculate_overall_score"):
-            overall = report_cls.calculate_overall_score(scores)
-        else:
-            overall = sum(scores) / len(scores) if scores else 0.0
+        overall = _overall_score(report_cls, scores, data.get("detailed_results") or [])
         data["overall_score"] = overall
         fields = getattr(report_cls, "model_fields", {})
         if "evaluator_name" in fields:
