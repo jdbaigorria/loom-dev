@@ -41,6 +41,7 @@ from .loaders.app import resolve_env
 from .loaders.context import conversation_is_none, get_context
 from .loaders.conversation import get_conversation_manager
 from .loaders.hook import get_hooks
+from .loaders.intervention import get_interventions
 from .loaders.mcp import get_mcp_clients
 from .loaders.memory import get_memory
 from .loaders.model import get_model, is_router_model, model_log_label
@@ -261,6 +262,13 @@ def build(
             overlay=model_params,
         )
         if agent_config.memory
+        else None,
+        "interventions": get_interventions(
+            agent_config.interventions,
+            {tool.name for tool in agent_config.tools or []},
+            config_dir,
+        )
+        if agent_config.interventions
         else None,
     }
 

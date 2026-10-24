@@ -19,3 +19,7 @@ memory:
 `builtin.kb` asks the model to call a knowledge base. A `bedrock_kb` memory store injects results before each turn and can write memories when `writable` is true. The Bedrock store uses the `boto_session` passed in `model_params` for that run.
 
 Without a sandbox, SDK tools that run commands execute on the host. Sandbox configuration is covered with `app.yml`.
+
+## Control
+
+`interventions` run before a tool call. Omit `ask` to pause with an interrupt: `loom agent run` prints the prompt and resumes with `interruptResponse`. `ask: stdio` blocks on stdin inside the turn. `cedar` policies need the `cedar` extra (`pip install 'loom-declarative[cedar]'`).

@@ -228,3 +228,18 @@ memory:
 `{user_id}` and `{session_id}` are filled from the session at build time. `file` stores files under `.loom/memory` unless `storage` is set on the store or on `app.yml`. `bedrock_kb` receives the per-run `boto_session` as its runtime client. A dotted key imports a custom store. `kind: bidi` rejects `memory`.
 
 `builtin.kb` is a tool the model calls when it decides to. A `bedrock_kb` store injects matches before the turn and can write when `writable` is true.
+
+### interventions
+
+```yaml
+interventions:
+  - hitl:
+      allowed_tools: [search]
+      ask: stdio
+  - cedar:
+      policies: policies/billing.cedar
+```
+
+`hitl` with `ask` omitted pauses on an interrupt. `loom agent run` resumes that interrupt from `AgentResponse.interrupts`, so the CLI does not block inside the model call. `ask: stdio` reads stdin during the turn. A dotted path is an inline callback. `allowed_tools` names must be tools on the agent (`*` and `!name` are allowed; `name` still has to exist).
+
+`cedar` needs `pip install 'loom-declarative[cedar]'`. Without it, build raises `AgentConfigError`. Policy paths are read relative to the agent config directory. `kind: bidi` rejects `interventions`.

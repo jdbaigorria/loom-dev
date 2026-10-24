@@ -38,6 +38,10 @@ aws = [
 tools = [
     "requests>=2.28.0",
 ]
+# Cedar policy interventions (`interventions: cedar`).
+cedar = [
+    "strands-agents[cedar]",
+]
 # Everything — the full authoring experience (equivalent to the old monolith).
 all = [
     "loom-declarative[cli,evals,aws,tools]",
