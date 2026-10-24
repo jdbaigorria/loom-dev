@@ -10,7 +10,7 @@
 
 Loom isn't published on PyPI yet — install straight from this repo, pinned to a release tag. The distribution name is `loom-declarative`; the import package (`import loom`) and the CLI (`loom`) are unchanged.
 
-Loom splits its dependencies into a slim runtime core and optional extras:
+The runtime requires `strands-agents` 1.62 or newer (and below 2.0). `loom doctor` lists which `Agent` parameters that install accepts.
 
 | Extra | Contents | Use when |
 |---|---|---|
@@ -18,7 +18,9 @@ Loom splits its dependencies into a slim runtime core and optional extras:
 | `[cli]` | CLI, wizards, templates (typer, inquirerpy, jinja2, rich) | Authoring agents |
 | `[evals]` | Alias that installs `loom-declarative-evals` | Running evals |
 | `[aws]` | `boto3` for `loom doctor --aws` | AWS/Bedrock checks |
-| `[all]` | Everything above | Full authoring experience |
+| `[tools]` | `requests` for `builtin.apicall` | HTTP builtin tools |
+| `[cedar]` | `strands-agents[cedar]` | `interventions: cedar` |
+| `[all]` | CLI, evals, AWS, and tools | Full authoring experience |
 
 Replace `vX.Y.Z` below with a real [release tag](https://github.com/jdbaigorria/loom-dev/tags).
 
@@ -74,6 +76,6 @@ loom doctor --no-aws # skip AWS/Bedrock checks
 The three built-in model profiles (`default`, `economic`, `powerful`) target Amazon Bedrock. You need:
 
 1. AWS credentials — via `~/.aws/credentials`, environment variables (`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`), or an IAM role.
-2. Model access enabled in the [Amazon Bedrock console](https://console.aws.amazon.com/bedrock/) for `us-east-1` (the default region — configurable in `loom.toml` or `warp/config/app.yml`).
+2. Model access enabled in the [Amazon Bedrock console](https://console.aws.amazon.com/bedrock/) for `us-east-1` (the default region — set `region` in `warp/config/app.yml`).
 
 To use a different provider (OpenAI, Anthropic, Gemini, Ollama, ...) see [Models & providers](guides/models.md) — no AWS needed.

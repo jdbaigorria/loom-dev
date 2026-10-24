@@ -35,12 +35,12 @@ loom agent dev my_agent       # hot-reload REPL — edit and iterate without res
 
 ### Declarative agents
 
-Everything that drives an agent — model, prompts, tools, hooks, sessions, retries, MCP servers, structured output — lives in a single YAML file that Loom validates at load time. Bad config fails immediately, not mid-invocation.
+Everything that drives an agent — model, prompts, tools, hooks, sessions, retries, MCP servers, structured output, and the Strands 1.62 fields (plugins, context, memory, interventions, sandbox, storage) — lives in YAML that Loom validates at load time. A field left out stays off. Bad config fails immediately, not mid-invocation.
 
 ```yaml title="warp/agents/my_agent/config/my_agent.yml"
 name: my_agent
 description: "Customer support assistant"
-model: economic          # built-in profile → Claude 3.5 Haiku on Bedrock
+model: economic          # built-in profile → Claude Haiku 5.5 on Bedrock
 retry: low
 system_prompt: prompt.md
 tools:
@@ -84,6 +84,7 @@ Not on PyPI yet — install pinned to a [release tag](https://github.com/jdbaigo
     pip install "loom-declarative[cli] @ git+https://github.com/jdbaigorria/loom-dev@vX.Y.Z"    # CLI + wizards
     pip install "loom-declarative[evals] @ git+https://github.com/jdbaigorria/loom-dev@vX.Y.Z"   # alias of loom-declarative-evals
     pip install "loom-declarative[aws] @ git+https://github.com/jdbaigorria/loom-dev@vX.Y.Z"     # AWS/Bedrock checks
+    pip install "loom-declarative[cedar] @ git+https://github.com/jdbaigorria/loom-dev@vX.Y.Z"   # Cedar interventions
     ```
 
 See [Installation](installation.md) for detailed setup including editable installs and source builds.
@@ -101,6 +102,10 @@ See [Installation](installation.md) for detailed setup including editable instal
 -   :material-file-code:{ .lg .middle } **[Creating agents](guides/agents.md)**
 
     Agent YAML schema, tools, hooks, prompts, structured output.
+
+-   :material-shield-account:{ .lg .middle } **[Memory, context, and control](guides/memory-context-control.md)**
+
+    Plugins, context, memory, interventions, sandbox, and experimental checkpoints.
 
 -   :material-tournament:{ .lg .middle } **[Workflows](guides/workflows.md)**
 

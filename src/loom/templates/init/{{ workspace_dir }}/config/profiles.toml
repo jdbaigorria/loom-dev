@@ -22,3 +22,9 @@
 #
 # [providers]
 # my_provider = "my.pkg.CustomModel"
+#
+# Example — failover across two profiles, then `model: resilient`:
+#
+# [model.resilient]
+# fallback = ["powerful", "economic"]
+# max_switches = 2

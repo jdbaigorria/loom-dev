@@ -202,6 +202,7 @@ Verifies:
 - `loom.toml` and workspace exist
 - AWS credentials (with `[aws]` extra)
 - Bedrock model access for the configured region (with `[aws]` extra)
+- Which `Agent(...)` parameters the installed Strands build accepts (`strands accepts …`)
 
 ---
 
@@ -220,7 +221,7 @@ Shows versions of `loom`, Python, `strands-agents`, and other key dependencies.
 | Variable | Description |
 |---|---|
 | `LOOM_ENV` | Default environment profile (overridden by `--env`) |
-| `AWS_DEFAULT_REGION` | AWS region (overridden by `loom.toml` and `app.yml`) |
+| `AWS_DEFAULT_REGION` | AWS region (overridden by `region` in `app.yml`) |
 | `AWS_ACCESS_KEY_ID` | AWS credentials |
 | `AWS_SECRET_ACCESS_KEY` | AWS credentials |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | OTel endpoint (used when telemetry is enabled) |

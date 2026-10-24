@@ -8,9 +8,9 @@ Loom ships three profiles out of the box, all targeting Amazon Bedrock:
 
 | Profile | Model | Use case |
 |---|---|---|
-| `default` | Claude 3.5 Sonnet v2 (Bedrock) | General purpose |
-| `economic` | Claude 3.5 Haiku (Bedrock) | Cost-sensitive, fast |
-| `powerful` | Claude 3.5 Sonnet v2 (Bedrock) | Best quality |
+| `default` | Claude Sonnet 5.5 (`anthropic.claude-sonnet-5-5`) | General purpose |
+| `economic` | Claude Haiku 5.5 (`anthropic.claude-haiku-5-5`) | Cost-sensitive, fast |
+| `powerful` | Claude Opus 5.5 (`anthropic.claude-opus-5-5`) | Best quality |
 
 ```yaml
 model: default    # or: economic | powerful

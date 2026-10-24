@@ -28,3 +28,19 @@ retry:
 {% if agent.output %}
 output: {{agent.output}}
 {% endif %}
+
+# Optional Strands fields. Leave them commented and the agent is unchanged.
+# See docs/guides/memory-context-control.md.
+# aux_model: economic
+# context: "off"                 # requires conversation: none
+# plugins:
+#   - goal: { goal: "Answer in one sentence", max_attempts: 2 }
+# memory:
+#   stores:
+#     - file: { name: notes, description: "Facts about {user_id}" }
+# interventions:
+#   - hitl: { ask: stdio }
+# background_tasks: true
+# checkpointing: true            # experimental; pair with session in app.yml
+# sandbox:                       # overrides app.yml
+#   docker: { container: loom-runner }

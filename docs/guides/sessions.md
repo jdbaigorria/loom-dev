@@ -92,3 +92,5 @@ session_id = str(uuid.uuid4())  # unique per conversation
 ## Conversation management
 
 Sessions store raw message history. **Conversation management** controls how that history is sent to the model (truncation, summarization). See [Conversation management](conversations.md) for details.
+
+`storage` in `app.yml` is a different knob. It is the shared backend (`local`, `s3`, or `memory`) for Strands subsystems that do not set a store of their own, including file memory. An explicit `session` block still owns conversation history.

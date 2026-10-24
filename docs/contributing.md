@@ -68,7 +68,7 @@ src/loom/
     └── context.py                # LoomSession
 ```
 
-**Anti-corruption layer:** All `strands` / `strands_evals` imports must go through `loom.adapters.strands` or `loom_evals.adapters.strands_evals`. Enforced by ruff rule `TID251`. The supported floor is `strands-agents` 1.62: HTTP MCP clients are built with `MCPClient(url=…)`, `BidiAgent` is imported from `strands.bidi`, and `kind: bidi` rejects `tool_executor`. Graph workflows can set `max_node_executions` and `execution_timeout`.
+**Anti-corruption layer:** All `strands` / `strands_evals` imports must go through `loom.adapters.strands` or `loom_evals.adapters.strands_evals`. Enforced by ruff rule `TID251`. The supported floor is `strands-agents` 1.62. HTTP MCP clients are built with `MCPClient(url=…)`, `BidiAgent` is imported from `strands.bidi`, and `kind: bidi` accepts `storage` and rejects the other Strands 1.62 YAML fields. Graph workflows can set `max_node_executions` and `execution_timeout`.
 
 ## Commit messages
 

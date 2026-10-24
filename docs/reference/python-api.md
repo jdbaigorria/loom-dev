@@ -185,6 +185,7 @@ The shape `run_dev` returns (workflows are shaped into the same type; a directly
 run.response.answer          # str — final text answer
 run.response.metadata        # AgentResponseMetadata
 run.response.interrupts      # list[InterruptInfo] — non-empty when the agent paused
+run.response.checkpoint      # dict | None — experimental, set when stop_reason is "checkpoint"
 ```
 
 ### AgentResponseMetadata
@@ -198,10 +199,13 @@ meta.total_tokens          # int — input + output
 meta.input_tokens          # int
 meta.output_tokens         # int
 meta.response_time_ms      # float — wall-clock ms
-meta.model_id               # str | None
+meta.model_id               # str | None — the candidate that answered, after a fallback
+meta.model_attempts         # list[dict] — each try: candidate, model_id, outcome
 meta.tool_calls             # list[str] — tool names invoked this turn
 meta.raw_metrics            # dict | None — Strands' own metrics summary, verbatim
 ```
+
+`checkpoint` is the marker to send back as `{"checkpointResume": {"checkpoint": response.checkpoint}}`. It does not contain the conversation. `loom agent run` performs that resume until the turn finishes. Pair `checkpointing: true` with `session` in `app.yml` if a process restart must keep history.
 
 ### Interrupts (human-in-the-loop)
 

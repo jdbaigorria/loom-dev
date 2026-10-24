@@ -119,6 +119,8 @@ tools:
 
 The model calls it with a `query` and may optionally pass `kb_id` to target a single knowledge base; omitting it searches all of them.
 
+A `bedrock_kb` entry under `memory` is a different object: it injects matches before the turn and can write when `writable` is true. `builtin.kb` runs only when the model calls it. See [Memory, context, and control](memory-context-control.md).
+
 ### `builtin.apicall` — HTTP tool
 
 Calls a pre-configured HTTP API. It has two modes, chosen by whether you declare `expose`:
@@ -255,6 +257,10 @@ tool_executor: sequential    # run tool calls one by one
 ```
 
 Omit `tool_executor` to use the Strands default (concurrent). This is feature-detected — on a Strands build without pluggable executors, loading fails with a clear upgrade hint.
+
+Tools that run shell commands or touch files use the host when `app.yml` has no `sandbox`. Declare `sandbox` (`docker` or `ssh`) to isolate them. An agent YAML `sandbox` overrides the app one. See [Memory, context, and control](memory-context-control.md).
+
+`background_tasks: true`, or a dict with `always`, `never`, and `agentic`, lets the model run tools off the turn. Those names have to be tools declared on the agent.
 
 ## MCP servers
 

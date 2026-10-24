@@ -25,6 +25,7 @@ my-project/
     ├── config/
     │   └── app.yml     # app-level config (region, session, defaults)
     ├── hooks/
+    ├── plugins/
     └── workflows/
 ```
 
@@ -64,7 +65,7 @@ The generated `assistant.yml` already has sensible defaults. For a first test it
 ```yaml title="warp/agents/assistant/config/assistant.yml"
 name: assistant
 description: "Helpful assistant"
-model: default        # Claude 3.5 Sonnet on Bedrock
+model: default        # Claude Sonnet 5.5 on Bedrock
 retry: low
 system_prompt: prompt.md
 ```
