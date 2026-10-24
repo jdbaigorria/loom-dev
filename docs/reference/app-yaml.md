@@ -116,6 +116,19 @@ storage: memory
 
 `s3` receives the per-run `boto_session` from `model_params`. `local` receives the app sandbox when one is declared. This is the only new field a `kind: bidi` agent accepts.
 
+### sandbox
+
+**Default:** omitted. SDK tools that run commands then run on the host, with no isolation.
+
+```yaml
+sandbox:
+  docker: { container: loom-runner, working_dir: /work, user: "1000" }
+sandbox:
+  ssh: { host: runner.internal, working_dir: /srv/agent }
+```
+
+An agent YAML `sandbox` overrides this one. SSH keeps the SDK defaults: unknown hosts are rejected and unsafe SSH options are rejected, unless you set those flags yourself. `DockerSandbox` only stores these values at build time. `kind: bidi` cannot override `sandbox` on the agent; a `local` storage backend still receives the app sandbox.
+
 ### conversation
 
 **Default:** `none`

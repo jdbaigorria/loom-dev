@@ -5,6 +5,7 @@ from typing import Literal
 from loom.config.defaults import DEFAULT_REGION
 
 from .conversations import ConversationConfig
+from .sandbox import SandboxConfig
 from .sessions import SessionConfig
 from .storage import StorageConfig
 from .strict import StrictConfig
@@ -21,6 +22,8 @@ class AppConfig(StrictConfig):
     session: SessionConfig | None = None
     # Shared backend for subsystems that do not declare their own storage.
     storage: StorageConfig | None = None
+    # Where SDK command and file tools run. Omitted means the host, with no isolation.
+    sandbox: SandboxConfig | None = None
     # Profile name (resolved from loom.config.profiles) or an inline config.
     conversation: str | ConversationConfig | None = "none"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"

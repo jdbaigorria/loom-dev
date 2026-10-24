@@ -14,6 +14,7 @@ from .output import StructuredOutputConfig
 from .plugin import PluginConfig
 from .prompt import PromptConfig
 from .retry import RetryStrategyConfig
+from .sandbox import SandboxConfig
 from .strict import StrictConfig
 from .tool import ToolConfig
 
@@ -42,6 +43,8 @@ class AgentConfig(StrictConfig):
     context: str | dict | None = None
     memory: MemoryConfig | None = None
     interventions: list[InterventionConfig] | None = None
+    # Overrides app.yml sandbox for this agent.
+    sandbox: SandboxConfig | None = None
     # How tools are executed within a single turn. None → Strands default
     # (concurrent). Requires a Strands build with pluggable tool executors.
     tool_executor: Literal["concurrent", "sequential"] | None = None
@@ -64,6 +67,8 @@ class AgentConfig(StrictConfig):
             raise ValueError("'memory' is not supported when kind is 'bidi'.")
         if self.interventions is not None:
             raise ValueError("'interventions' is not supported when kind is 'bidi'.")
+        if self.sandbox is not None:
+            raise ValueError("'sandbox' is not supported when kind is 'bidi'.")
         if self.aux_model is not None:
             raise ValueError("'aux_model' is not supported when kind is 'bidi'.")
         if not isinstance(self.model, str):

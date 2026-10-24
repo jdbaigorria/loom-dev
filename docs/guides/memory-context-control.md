@@ -18,7 +18,7 @@ memory:
 
 `builtin.kb` asks the model to call a knowledge base. A `bedrock_kb` memory store injects results before each turn and can write memories when `writable` is true. The Bedrock store uses the `boto_session` passed in `model_params` for that run.
 
-Without a sandbox, SDK tools that run commands execute on the host. Sandbox configuration is covered with `app.yml`.
+Without a sandbox, SDK tools that run commands execute on the host, with no isolation. Declare `sandbox` in `app.yml` (`docker` or `ssh`). An agent can override it. SSH host-key checks and the option allowlist stay at the SDK defaults.
 
 ## Control
 
