@@ -50,9 +50,10 @@ from loom_evals.adapters.strands_evals import (
     ToolParameterAccuracyEvaluator,
     ToolSelectionAccuracyEvaluator,
     TrajectoryEvaluator,
+    split_reports,
     tools_use_extractor,
 )
-from loom_evals.loader import get_experiment
+from loom_evals.loader import evaluator_loom_name, get_experiment
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +96,20 @@ class LoomEvals:
             task_fn = self._build_task_function(experiment.evaluators)
             logger.debug("Task function built for agent '%s'", self.name)
 
-            reports: list[EvaluationReport] = experiment.run_evaluations(task_fn)
+            raw = experiment.run_evaluations(task_fn)
+            names = [
+                evaluator_loom_name(ev) or f"evaluator_{index}"
+                for index, ev in enumerate(experiment.evaluators)
+            ]
+            pairs = split_reports(raw, names)
+            reports: list[EvaluationReport] = []
+            for name, report in pairs:
+                if isinstance(name, str):
+                    try:
+                        report.evaluator_name = name
+                    except Exception:
+                        pass
+                reports.append(report)
             logger.info("Evaluation completed: %d report(s) generated", len(reports))
 
             self._save_reports(reports)

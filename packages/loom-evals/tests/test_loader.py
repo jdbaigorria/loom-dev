@@ -227,12 +227,6 @@ class TestToEvaluatorFieldExclusion:
 # _to_evaluator — tipos sin rubric (EVL-E13 a EVL-E17)
 # ---------------------------------------------------------------------------
 
-_INCLUDE_INPUTS_BUG = (
-    "BUG en evaluator: este evaluador no acepta 'include_inputs' pero el módulo "
-    "lo pasa porque no está en la lista de exclusión para este tipo."
-)
-
-
 class TestToEvaluatorNoRubric:
     """EVL-E13 a EVL-E17"""
 
@@ -243,7 +237,6 @@ class TestToEvaluatorNoRubric:
         result = _to_evaluator([_eval_cfg(type="helpfulness")])
         assert isinstance(result[0], HelpfulnessEvaluator)
 
-    @pytest.mark.xfail(reason=_INCLUDE_INPUTS_BUG, strict=True)
     def test_faithfulness_retorna_evaluador_correcto_sin_rubric(self):
         """EVL-E14: type='faithfulness' → FaithfulnessEvaluator, rubric excluido"""
         from loom_evals.adapters.strands_evals import FaithfulnessEvaluator
@@ -251,7 +244,6 @@ class TestToEvaluatorNoRubric:
         result = _to_evaluator([_eval_cfg(type="faithfulness")])
         assert isinstance(result[0], FaithfulnessEvaluator)
 
-    @pytest.mark.xfail(reason=_INCLUDE_INPUTS_BUG, strict=True)
     def test_goal_success_rate_retorna_evaluador_correcto_sin_rubric(self):
         """EVL-E15: type='goal_success_rate' → GoalSuccessRateEvaluator, rubric excluido"""
         from loom_evals.adapters.strands_evals import GoalSuccessRateEvaluator
@@ -259,7 +251,6 @@ class TestToEvaluatorNoRubric:
         result = _to_evaluator([_eval_cfg(type="goal_success_rate")])
         assert isinstance(result[0], GoalSuccessRateEvaluator)
 
-    @pytest.mark.xfail(reason=_INCLUDE_INPUTS_BUG, strict=True)
     def test_tool_selection_retorna_evaluador_correcto_sin_rubric(self):
         """EVL-E16: type='tool_selection' → ToolSelectionAccuracyEvaluator, rubric excluido"""
         from loom_evals.adapters.strands_evals import ToolSelectionAccuracyEvaluator
@@ -267,7 +258,6 @@ class TestToEvaluatorNoRubric:
         result = _to_evaluator([_eval_cfg(type="tool_selection")])
         assert isinstance(result[0], ToolSelectionAccuracyEvaluator)
 
-    @pytest.mark.xfail(reason=_INCLUDE_INPUTS_BUG, strict=True)
     def test_tool_parameter_retorna_evaluador_correcto_sin_rubric(self):
         """EVL-E17: type='tool_parameter' → ToolParameterAccuracyEvaluator, rubric excluido"""
         from loom_evals.adapters.strands_evals import ToolParameterAccuracyEvaluator

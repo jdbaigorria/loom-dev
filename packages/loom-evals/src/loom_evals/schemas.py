@@ -46,6 +46,9 @@ class EvaluatorConfig(BaseModel):
     model: str | None = None
     system_prompt: str | None = None
     include_inputs: bool = True
+    # Optional display name. When omitted, duplicates of the same type are
+    # disambiguated (output, output_2, ...).
+    name: str | None = None
 
     def validate_for_type(self) -> list[str]:
         warnings: list = []
