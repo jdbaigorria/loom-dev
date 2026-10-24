@@ -22,6 +22,24 @@ logger = logging.getLogger(__name__)
 _initialized = False
 
 
+def agent_telemetry_attributes(
+    config: TelemetryConfig | None, *, session_id: str, user_id: str
+) -> tuple[dict[str, str] | None, dict[str, str] | None]:
+    """Merge ``session.id`` and ``user.id`` into attributes the user declared.
+
+    Keys the user wrote win. When neither map is declared, both results are
+    ``None`` and nothing is passed to the agent.
+    """
+    if config is None:
+        return None, None
+    identity = {"session.id": session_id, "user.id": user_id}
+    trace = {**identity, **config.trace_attributes} if config.trace_attributes is not None else None
+    baggage = (
+        {**identity, **config.baggage_attributes} if config.baggage_attributes is not None else None
+    )
+    return trace, baggage
+
+
 def setup_telemetry(config: TelemetryConfig | None) -> bool:
     """Initialize OpenTelemetry exporters from the app telemetry config.
 

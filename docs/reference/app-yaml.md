@@ -179,6 +179,8 @@ OTel export config:
 | `exporter` | `otlp` \| `console` | `otlp` | Export backend |
 | `metrics` | bool | `false` | Export metrics (not just traces) |
 | `service_name` | str \| null | `null` | Service name in spans |
+| `trace_attributes` | dict \| null | `null` | Span attributes. Loom adds `session.id` and `user.id`; your keys win |
+| `baggage_attributes` | dict \| null | `null` | Baggage attributes, same session merge |
 
 The OTLP endpoint and headers come from the standard env vars:
 - `OTEL_EXPORTER_OTLP_ENDPOINT`
