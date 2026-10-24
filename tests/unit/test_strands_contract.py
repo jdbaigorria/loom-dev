@@ -82,3 +82,37 @@ class TestMetricsSummary:
         tool_usage = result.metrics.get_summary()["tool_usage"]
         assert isinstance(tool_usage, dict)
         assert list(tool_usage.keys()) == list(tool_usage.keys())
+
+
+# Public paths from specs/sdk-1.62-features.md Annex A. Optional symbols that need
+# an extra (Cedar) may be None; everything else must resolve on the 1.62 floor.
+_REQUIRED_SYMBOLS = (
+    "Plugin",
+    "InterventionHandler",
+    "MemoryManager",
+    "FileMemoryStore",
+    "BedrockKnowledgeBaseStore",
+    "AgentSkills",
+    "ContextOffloader",
+    "GoalLoop",
+    "HumanInTheLoop",
+    "Sandbox",
+    "DockerSandbox",
+    "SshSandbox",
+    "Storage",
+    "LocalFileStorage",
+    "S3Storage",
+    "InMemoryStorage",
+    "ModelRouter",
+    "RoutingCandidate",
+    "FallbackStrategy",
+    "ClassifierStrategy",
+    "AfterModelCallEvent",
+)
+
+
+def test_sdk_162_public_paths_resolve():
+    import loom.adapters.strands as sx
+
+    missing = [name for name in _REQUIRED_SYMBOLS if getattr(sx, name) is None]
+    assert missing == []
