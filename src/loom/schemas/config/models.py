@@ -41,6 +41,10 @@ class CustomModelConfig(BaseModel):
         description="Dotted path to a Strands Model class, e.g. strands.models.openai.OpenAIModel",
     )
     params: dict[str, Any] = Field(default_factory=dict)
+    name: str | None = Field(
+        default=None,
+        description="Candidate name when this model is one entry of a fallback list.",
+    )
 
     @model_validator(mode="after")
     def _require_exactly_one_target(self) -> "CustomModelConfig":
@@ -60,5 +64,14 @@ class CustomModelConfig(BaseModel):
         return dict(self.params)
 
 
-# A model is either a profile name (str) or an inline passthrough config.
-ModelConfig = str | CustomModelConfig
+class FallbackModelConfig(BaseModel):
+    """Ordered failover across two or more model candidates."""
+
+    model_config = ConfigDict(extra="forbid")
+    fallback: list[str | CustomModelConfig] = Field(min_length=2)
+    max_switches: int | None = Field(default=None, ge=0)
+
+
+# A model is a profile name, an inline passthrough, an ordered fallback, or a
+# short list of candidates (the same thing as ``fallback`` without a cap).
+ModelConfig = str | CustomModelConfig | FallbackModelConfig | list[str | CustomModelConfig]

@@ -131,6 +131,36 @@ params = { model_id = "gpt-4o" }
 
 Then any agent can use `model: fast` or `model: gpt4`.
 
+## Fallback across candidates
+
+`model` can list candidates in preference order. Loom builds a Strands `ModelRouter`. A failure the retry does not keep (or a retry budget that runs out) moves to the next candidate. The retry budget is per candidate, so three candidates with `retry: low` (3 attempts) can make up to 9 calls. Prefer a low retry when you declare a fallback.
+
+```yaml
+model: [powerful, economic]
+```
+
+```yaml
+model:
+  fallback:
+    - powerful
+    - name: openai-backup
+      provider: openai
+      params: { model_id: gpt-4o }
+  max_switches: 2
+```
+
+The same shape works as a profile:
+
+```toml
+[model.resilient]
+fallback = ["powerful", "economic"]
+max_switches = 2
+```
+
+`kind: bidi` does not accept a fallback. A single `model_params` overlay is applied to every candidate only when they are the same model class. Mixed classes need `model_params={"by_candidate": {"openai-backup": {...}}}`.
+
+After a call, response metadata `model_id` is the candidate that answered, and `model_attempts` lists each try.
+
 ## Custom provider aliases
 
 Add aliases in `warp/config/profiles.toml` under `[providers]`:

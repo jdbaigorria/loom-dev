@@ -26,6 +26,7 @@ class AgentResponseMetadata(BaseModel):
     total_tokens: int
     response_time_ms: float
     model_id: str | None = None
+    model_attempts: list[dict] = Field(default_factory=list)
     tool_calls: list[str] = Field(default_factory=list)
     raw_metrics: dict | None = None
 
