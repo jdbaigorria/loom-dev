@@ -46,6 +46,7 @@ nav:
       - Hooks: guides/hooks.md
       - Sessions: guides/sessions.md
       - Conversation management: guides/conversations.md
+      - Memory, context, and control: guides/memory-context-control.md
       - Multi-agent workflows: guides/workflows.md
       - Evaluations: guides/evals.md
       - Observability: guides/observability.md
