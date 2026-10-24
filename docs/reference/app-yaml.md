@@ -100,6 +100,22 @@ session:
 session: null
 ```
 
+### storage
+
+**Default:** omitted (each subsystem keeps its own default)
+
+Shared backend for session and context pieces that do not set a store of their own. An explicit store on that subsystem still wins.
+
+```yaml
+storage:
+  local: { base_dir: .loom/storage }   # default base_dir is .loom/storage
+storage:
+  s3: { bucket: my-bucket, prefix: loom/, region_name: us-east-1 }
+storage: memory
+```
+
+`s3` receives the per-run `boto_session` from `model_params`. `local` receives the app sandbox when one is declared. This is the only new field a `kind: bidi` agent accepts.
+
 ### conversation
 
 **Default:** `none`

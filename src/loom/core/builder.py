@@ -49,6 +49,7 @@ from .loaders.prompt import get_prompt
 from .loaders.retry import get_retry_strategy
 from .loaders.routing import RoutingTraceHook
 from .loaders.session import get_session_manager
+from .loaders.storage import get_storage
 from .loaders.tool import get_tools
 from .loaders.tool_executor import get_tool_executor
 from .paths import WorkspacePaths
@@ -183,6 +184,13 @@ def build(
         if app_config.session
         else None,
         "hooks": hooks,
+        "storage": get_storage(
+            app_config.storage,
+            metadata_dir=paths.metadata_dir if paths else None,
+            overlay=model_params,
+        )
+        if app_config.storage
+        else None,
     }
 
     if agent_config.kind == "bidi":
