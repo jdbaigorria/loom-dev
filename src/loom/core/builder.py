@@ -38,6 +38,7 @@ from loom.schemas.config.tool import ToolConfig
 from loom.schemas.context import LoomSession
 
 from .loaders.app import resolve_env
+from .loaders.background import get_background_tasks
 from .loaders.context import conversation_is_none, get_context
 from .loaders.conversation import get_conversation_manager
 from .loaders.hook import get_hooks
@@ -277,6 +278,12 @@ def build(
         if agent_config.interventions
         else None,
         "sandbox": sandbox if agent_config.kind != "bidi" else None,
+        "background_tasks": get_background_tasks(
+            agent_config.background_tasks,
+            {tool.name for tool in agent_config.tools or []},
+        )
+        if agent_config.background_tasks is not None
+        else None,
     }
 
     clean_params = {k: v for k, v in {**shared_params, **agent_only}.items() if v is not None}
