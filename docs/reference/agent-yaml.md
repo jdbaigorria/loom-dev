@@ -255,3 +255,7 @@ background_tasks:
 ```
 
 `true` lets the model run tools in the background. `always`, `never`, and `agentic` name tools declared on the agent. `kind: bidi` rejects the field.
+
+### checkpointing
+
+Experimental. `checkpointing: true` can end a turn with `stop_reason: checkpoint`. `loom agent run` resumes with `checkpointResume`. The checkpoint does not store the conversation. Set `session` in `app.yml` if a restart must keep the history. `kind: bidi` rejects the field.

@@ -40,6 +40,7 @@ def test_file_store_resolves_placeholders_and_is_attached(monkeypatch, tmp_path)
 
 def test_bedrock_store_uses_the_overlay_session(monkeypatch):
     monkeypatch.setattr("loom.core.builder.get_model", lambda *a, **k: MockModel(["ok"]))
+
     def _client(service, region_name=None):
         return runtime if service == "bedrock-agent-runtime" else agent_client
 

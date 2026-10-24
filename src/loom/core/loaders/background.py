@@ -7,9 +7,7 @@ from loom.core.exceptions import AgentConfigError
 from loom.schemas.config.background import BackgroundTasksConfig
 
 
-def get_background_tasks(
-    value: bool | BackgroundTasksConfig, tool_names: set[str]
-) -> bool | dict:
+def get_background_tasks(value: bool | BackgroundTasksConfig, tool_names: set[str]) -> bool | dict:
     """Return ``True`` or a ``BackgroundTasksConfig`` dict."""
     if not capabilities.agent_accepts("background_tasks"):
         raise AgentConfigError(

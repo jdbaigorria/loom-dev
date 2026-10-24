@@ -173,9 +173,7 @@ def build(
         trace = RoutingTraceHook()
         hooks = [*(hooks or []), trace]
 
-    sandbox_cfg = (
-        agent_config.sandbox if agent_config.sandbox is not None else app_config.sandbox
-    )
+    sandbox_cfg = agent_config.sandbox if agent_config.sandbox is not None else app_config.sandbox
     sandbox = get_sandbox(sandbox_cfg) if sandbox_cfg is not None else None
     storage = (
         get_storage(
@@ -208,7 +206,9 @@ def build(
     trace_attributes, baggage_attributes = agent_telemetry_attributes(
         app_config.telemetry, session_id=session.session_id, user_id=session.user_id
     )
-    if agent_config.kind == "bidi" and (trace_attributes is not None or baggage_attributes is not None):
+    if agent_config.kind == "bidi" and (
+        trace_attributes is not None or baggage_attributes is not None
+    ):
         raise AgentConfigError(
             "trace_attributes and baggage_attributes are not supported when kind is 'bidi'.",
             tip="Remove them from telemetry, or run this agent with kind: agent.",
@@ -222,7 +222,9 @@ def build(
         if agent_config.conversation is not None
         else app_config.conversation
     )
-    context_manager = get_context(agent_config.context) if agent_config.context is not None else None
+    context_manager = (
+        get_context(agent_config.context) if agent_config.context is not None else None
+    )
     aux = None
     if agent_config.aux_model is not None:
         if is_router_model(agent_config.aux_model):
@@ -249,11 +251,17 @@ def build(
         )
     skip_conversation = context_manager is not None or stateful
     if (trace_attributes is not None or baggage_attributes is not None) and not (
-        capabilities.agent_accepts("trace_attributes") and capabilities.agent_accepts("baggage_attributes")
+        capabilities.agent_accepts("trace_attributes")
+        and capabilities.agent_accepts("baggage_attributes")
     ):
         raise AgentConfigError(
             "The installed Strands version does not accept trace or baggage attributes.",
             tip="Requiere strands-agents >= 1.60 for baggage_attributes.",
+        )
+    if agent_config.checkpointing is not None and not capabilities.agent_accepts("checkpointing"):
+        raise AgentConfigError(
+            "The installed Strands version does not accept checkpointing.",
+            tip="Requiere strands-agents >= 1.43",
         )
     output_class = None
     output_prompt = None
@@ -302,6 +310,7 @@ def build(
         else None,
         "trace_attributes": trace_attributes,
         "baggage_attributes": baggage_attributes,
+        "checkpointing": agent_config.checkpointing,
     }
 
     clean_params = {k: v for k, v in {**shared_params, **agent_only}.items() if v is not None}

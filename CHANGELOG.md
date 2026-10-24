@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Experimental checkpointing.** `checkpointing: true` on an agent pauses at
+  cycle boundaries (`stop_reason: checkpoint`). `loom agent run` resumes with
+  `checkpointResume`. The checkpoint does not store the conversation; set
+  `session` in `app.yml` when history has to survive a restart. `kind: bidi`
+  rejects the field.
 - **Graph execution limits.** A graph workflow can set `max_node_executions`,
   `execution_timeout`, `node_timeout`, and `reset_on_revisit`. Unset limits keep
   the previous behavior, including Strands' warning that execution is unbounded.

@@ -23,3 +23,7 @@ Without a sandbox, SDK tools that run commands execute on the host, with no isol
 ## Control
 
 `interventions` run before a tool call. Omit `ask` to pause with an interrupt: `loom agent run` prints the prompt and resumes with `interruptResponse`. `ask: stdio` blocks on stdin inside the turn. `cedar` policies need the `cedar` extra (`pip install 'loom-declarative[cedar]'`).
+
+## Checkpointing (experimental)
+
+`checkpointing: true` pauses between model and tool cycles. The CLI resumes automatically. The checkpoint marker does not include the conversation, so durability across a process restart still needs `session` in `app.yml`.

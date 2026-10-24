@@ -63,7 +63,11 @@ def _create_summarizing_agent(config: SummarizationAgentConfig) -> Agent:
     """
     params = config.model_dump()
     if not params.get("model_id"):
-        params["model_id"] = get_profiles().model["economic"].model_id
+        profile = get_profiles().model["economic"]
+        model_id = getattr(profile, "model_id", None)
+        if not isinstance(model_id, str):
+            raise AgentConfigError("The economic profile must name a single model_id.")
+        params["model_id"] = model_id
     model = BedrockModel(**params)
     return Agent(model=model)
 

@@ -35,3 +35,6 @@ class AgentResponse(BaseModel):
     answer: str
     metadata: AgentResponseMetadata
     interrupts: list[InterruptInfo] = Field(default_factory=list)
+    # Experimental. Set when stop_reason is "checkpoint". Does not include the
+    # conversation; resume with a session manager if you need that state.
+    checkpoint: dict | None = None
