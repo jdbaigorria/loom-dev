@@ -13,7 +13,7 @@ from uuid import uuid4
 from rich.prompt import Prompt
 from typer import Argument, Exit, Option, Typer
 
-from loom.cli.commands.run import resolve_interrupts
+from loom.cli.commands.run import resolve_control
 from loom.core.exceptions import AgentConfigError, AgentNotFoundError
 from loom.core.loaders.app import resolve_env
 from loom.core.paths import build_workspace_paths
@@ -97,7 +97,7 @@ def dev_agent(
 
             with console.status("[bold green]Thinking...[/bold green]"):
                 response, _ = run_turn(dev, user_input, session)
-            response = resolve_interrupts(dev, session, response)
+            response = resolve_control(dev, session, response)
 
             print_success(f"\n{name}:")
             print_success(response.answer)

@@ -15,14 +15,20 @@ from loom.testing import MockModel
 def test_skills_plugin_loads_a_skill_file(tmp_path: Path):
     skill = tmp_path / "pdf"
     skill.mkdir()
-    (skill / "SKILL.md").write_text("---\nname: pdf\ndescription: Read PDFs\n---\nUse the file.\n", encoding="utf-8")
+    (skill / "SKILL.md").write_text(
+        "---\nname: pdf\ndescription: Read PDFs\n---\nUse the file.\n", encoding="utf-8"
+    )
     built = get_plugins([PluginConfig(name="skills", params={"skills": str(skill)})], None)
     assert isinstance(built[0], AgentSkills)
 
 
 def test_goal_plugin_accepts_a_natural_language_goal():
     built = get_plugins(
-        [PluginConfig(name="goal", params={"goal": "Include the ticket number", "max_attempts": 2})],
+        [
+            PluginConfig(
+                name="goal", params={"goal": "Include the ticket number", "max_attempts": 2}
+            )
+        ],
         None,
     )
     assert isinstance(built[0], GoalLoop)
@@ -39,4 +45,6 @@ def test_agent_receives_the_plugin():
 
 def test_bidi_rejects_plugins():
     with pytest.raises(ValidationError, match="plugins"):
-        AgentConfig(name="voice", kind="bidi", plugins=[PluginConfig(name="goal", params={"goal": "x"})])
+        AgentConfig(
+            name="voice", kind="bidi", plugins=[PluginConfig(name="goal", params={"goal": "x"})]
+        )

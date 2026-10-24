@@ -27,13 +27,19 @@ def get_memory(
             "The installed Strands version does not accept memory_manager.",
             tip="Requiere strands-agents >= 1.44",
         )
-    if sx.MemoryManager is None or sx.FileMemoryStore is None or sx.BedrockKnowledgeBaseStore is None:
+    if (
+        sx.MemoryManager is None
+        or sx.FileMemoryStore is None
+        or sx.BedrockKnowledgeBaseStore is None
+    ):
         raise AgentConfigError(
             "The installed Strands version does not provide memory stores.",
             tip="Requiere strands-agents >= 1.44",
         )
     stores = [
-        _build_store(store.kind, _placeholders(store.params, session), metadata_dir, storage, overlay)
+        _build_store(
+            store.kind, _placeholders(store.params, session), metadata_dir, storage, overlay
+        )
         for store in config.stores
     ]
     return sx.MemoryManager(
@@ -46,7 +52,9 @@ def get_memory(
 
 def _placeholders(value: Any, session: LoomSession) -> Any:
     if isinstance(value, str):
-        return value.replace("{user_id}", session.user_id).replace("{session_id}", session.session_id)
+        return value.replace("{user_id}", session.user_id).replace(
+            "{session_id}", session.session_id
+        )
     if isinstance(value, dict):
         return {key: _placeholders(item, session) for key, item in value.items()}
     if isinstance(value, list):

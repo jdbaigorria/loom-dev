@@ -36,6 +36,27 @@ def resolve_interrupts(dev: DevAgent, session: LoomSession, response):
     return response
 
 
+def resolve_checkpoints(dev: DevAgent, session: LoomSession, response):
+    """Resume experimental checkpoints until the turn finishes.
+
+    A checkpoint does not store the conversation. Pair it with ``session`` in
+    ``app.yml`` when the process might restart between resumes.
+    """
+    while response.checkpoint:
+        print_hint("Resuming from an experimental checkpoint...")
+        content = {"checkpointResume": {"checkpoint": response.checkpoint}}
+        with console.status("[bold green]Resuming...[/bold green]"):
+            response, _ = run_turn(dev, content, session)
+        response = resolve_interrupts(dev, session, response)
+    return response
+
+
+def resolve_control(dev: DevAgent, session: LoomSession, response):
+    """Finish interrupts and experimental checkpoints before showing the answer."""
+    response = resolve_interrupts(dev, session, response)
+    return resolve_checkpoints(dev, session, response)
+
+
 @app.callback(invoke_without_command=True)
 def run_agent(
     name: str = Argument(..., help="Name of the agent to run"),
@@ -66,7 +87,7 @@ def run_agent(
             try:
                 with console.status("Agent is thinking..."):
                     response, _ = run_turn(dev, message, session)
-                response = resolve_interrupts(dev, session, response)
+                response = resolve_control(dev, session, response)
                 print_success(f"Agent: [white]{response.answer}[/white]")
             except Exception as e:
                 print_error(f"Agent error: {e}")
@@ -92,7 +113,7 @@ def run_agent(
 
                 with console.status("[bold green]Thinking...[/bold green]"):
                     response, _ = run_turn(dev, user_input, session)
-                response = resolve_interrupts(dev, session, response)
+                response = resolve_control(dev, session, response)
 
                 print_success(f"\n{name}: ")
                 print_success(response.answer)

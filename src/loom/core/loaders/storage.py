@@ -32,7 +32,11 @@ def get_storage(
     if config.kind == "memory":
         return sx.InMemoryStorage()
     if config.kind == "local":
-        base = Path(config.base_dir) if config.base_dir else (metadata_dir or Path(".loom")) / "storage"
+        base = (
+            Path(config.base_dir)
+            if config.base_dir
+            else (metadata_dir or Path(".loom")) / "storage"
+        )
         return sx.LocalFileStorage(str(base), sandbox=sandbox)
     session = (overlay or {}).get("boto_session")
     return sx.S3Storage(

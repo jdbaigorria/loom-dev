@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from loom.adapters import strands as sx
 from loom.adapters.strands import capabilities
@@ -43,7 +43,9 @@ def _one(item: PluginConfig, plugins_dir: Path | None, config_dir: Path | None) 
     elif item.name in _BUILTIN:
         cls = sx.resolve(_BUILTIN[item.name], optional=True)
         if cls is None:
-            raise AgentConfigError(f"Built-in plugin '{item.name}' is not available in this Strands build.")
+            raise AgentConfigError(
+                f"Built-in plugin '{item.name}' is not available in this Strands build."
+            )
     else:
         cls = _local_class(item.name, plugins_dir)
     params = _prepare(item.name, params, config_dir, cls)
@@ -75,10 +77,12 @@ def _local_class(name: str, plugins_dir: Path | None) -> type:
         raise AgentConfigError(
             f"Plugin file {path.name} has no class {class_name}.",
         )
-    return cls
+    return cast(type, cls)
 
 
-def _prepare(name: str, params: dict[str, Any], config_dir: Path | None, cls: type) -> dict[str, Any]:
+def _prepare(
+    name: str, params: dict[str, Any], config_dir: Path | None, cls: type
+) -> dict[str, Any]:
     if name == "skills" and config_dir is not None and "skills" in params:
         params["skills"] = _resolve_skill_paths(params["skills"], config_dir)
     if name == "goal" and isinstance(params.get("judge"), dict):

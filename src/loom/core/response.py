@@ -109,7 +109,27 @@ def build_response(
         user_msg_idx=user_msg_idx,
         assistant_msg_idx=assistant_msg_idx,
     )
-    return AgentResponse(answer=answer, metadata=metadata, interrupts=extract_interrupts(result))
+    return AgentResponse(
+        answer=answer,
+        metadata=metadata,
+        interrupts=extract_interrupts(result),
+        checkpoint=_checkpoint(result),
+    )
+
+
+def _checkpoint(result: Any) -> dict | None:
+    """Copy a checkpoint when the turn stopped to be resumed."""
+    if getattr(result, "stop_reason", None) != "checkpoint":
+        return None
+    raw = getattr(result, "checkpoint", None)
+    if raw is None:
+        return None
+    if hasattr(raw, "to_dict"):
+        data = raw.to_dict()
+        return dict(data) if isinstance(data, dict) else None
+    if isinstance(raw, dict):
+        return dict(raw)
+    return None
 
 
 def run_and_record(
