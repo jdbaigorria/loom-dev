@@ -36,6 +36,16 @@ class TestBuildBidi:
         assert "retry_strategy" not in kwargs
         assert "callback_handler" not in kwargs
 
+    def test_tool_executor_is_rejected_before_bidi_is_built(self):
+        cfg = AgentConfig(name="voice", kind="bidi", tool_executor="sequential")
+        fake_bidi = MagicMock()
+        with patch("loom.core.builder.sx.BidiAgent", fake_bidi):
+            with pytest.raises(AgentConfigError, match="tool_executor"):
+                from loom.core.builder import _build_bidi
+
+                _build_bidi(cfg, {"tool_executor": object()})
+        fake_bidi.assert_not_called()
+
     def test_build_bidi_missing_capability_raises(self):
         """kind=bidi on a Strands without BidiAgent → friendly error."""
         cfg = AgentConfig(name="voice", kind="bidi")
@@ -44,7 +54,7 @@ class TestBuildBidi:
             patch("loom.core.builder.get_prompt", return_value="PROMPT"),
             patch("loom.core.builder.sx.BidiAgent", None),
         ):
-            with pytest.raises(AgentConfigError, match="experimental BidiAgent"):
+            with pytest.raises(AgentConfigError, match="BidiAgent"):
                 build(cfg, _session())
 
 

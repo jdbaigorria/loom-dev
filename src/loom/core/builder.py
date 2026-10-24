@@ -210,9 +210,14 @@ def _build_bidi(agent_config: AgentConfig, shared_params: dict):
     """
     if sx.BidiAgent is None:
         raise AgentConfigError(
-            "The installed Strands version does not provide the experimental BidiAgent.",
-            tip="Upgrade strands-agents to a version that ships "
-            "strands.experimental.bidi, or set kind: agent.",
+            "The installed Strands version does not provide BidiAgent.",
+            tip="Upgrade strands-agents to a version that ships strands.bidi, or set kind: agent.",
+        )
+
+    if "tool_executor" in shared_params and shared_params["tool_executor"] is not None:
+        raise AgentConfigError(
+            "'tool_executor' is not supported for bidi agents by the installed Strands version.",
+            tip="Remove 'tool_executor' from the agent YAML (Strands >= 1.57.2 dropped it from BidiAgent).",
         )
 
     clean_params = {k: v for k, v in shared_params.items() if v is not None}
