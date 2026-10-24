@@ -54,9 +54,7 @@ from .telemetry import setup_telemetry
 logger = logging.getLogger(__name__)
 
 
-def _select_tools(
-    tool_defs: list[ToolConfig] | None, names: list[str] | None
-) -> list[ToolConfig]:
+def _select_tools(tool_defs: list[ToolConfig] | None, names: list[str] | None) -> list[ToolConfig]:
     """Return the declared tools, optionally narrowed to ``names``.
 
     ``names is None`` → the full declared catalog. Otherwise every requested name
@@ -150,7 +148,9 @@ def build(
     # Tools come from local/shared Python files and/or MCP servers. MCP clients are
     # ToolProviders handed straight to the agent, which owns their open/close
     # lifecycle (started on build, stopped on ``agent.cleanup()``).
-    local_tools = get_tools(selected_tools, agent_dir, shared_dir, model_params) if selected_tools else []
+    local_tools = (
+        get_tools(selected_tools, agent_dir, shared_dir, model_params) if selected_tools else []
+    )
     mcp_clients = get_mcp_clients(agent_config.mcp_servers) if agent_config.mcp_servers else []
     all_tools = [*local_tools, *mcp_clients]
 
@@ -284,5 +284,10 @@ def build_agent(
     paths = src.workspace if isinstance(src, FileConfigSource) else None
 
     return build(
-        agent_config, session, app_config=app_config, tools=tools, paths=paths, model_params=model_params
+        agent_config,
+        session,
+        app_config=app_config,
+        tools=tools,
+        paths=paths,
+        model_params=model_params,
     )

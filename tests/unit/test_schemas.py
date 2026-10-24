@@ -469,14 +469,18 @@ def test_example_and_new_agent_yaml_still_validate():
     template = (root / "src/loom/templates/new/config/{{folder_name}}.yml.j2").read_text(
         encoding="utf-8"
     )
-    rendered = Environment().from_string(template).render(
-        agent={
-            "name": "demo",
-            "description": "d",
-            "model": "default",
-            "system_prompt": {"prompt": "prompt.md"},
-            "retry": "low",
-            "output": None,
-        }
+    rendered = (
+        Environment()
+        .from_string(template)
+        .render(
+            agent={
+                "name": "demo",
+                "description": "d",
+                "model": "default",
+                "system_prompt": {"prompt": "prompt.md"},
+                "retry": "low",
+                "output": None,
+            }
+        )
     )
     AgentConfig.model_validate(yaml.safe_load(rendered))

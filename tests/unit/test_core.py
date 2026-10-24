@@ -381,7 +381,11 @@ class TestSelectTools:
         from loom.core.builder import _select_tools
         from loom.schemas.config.tool import ToolConfig
 
-        defs = [ToolConfig.model_validate("a"), ToolConfig.model_validate("b"), ToolConfig.model_validate("c")]
+        defs = [
+            ToolConfig.model_validate("a"),
+            ToolConfig.model_validate("b"),
+            ToolConfig.model_validate("c"),
+        ]
         result = _select_tools(defs, ["c", "a"])
         assert [t.name for t in result] == ["a", "c"]
 
@@ -452,7 +456,9 @@ class TestBuildEngine:
         from loom.schemas.config.app import AppConfig
         from loom.schemas.config.tool import ToolConfig
 
-        cfg = AgentConfig(name="eng", tools=[ToolConfig.model_validate("a"), ToolConfig.model_validate("b")])
+        cfg = AgentConfig(
+            name="eng", tools=[ToolConfig.model_validate("a"), ToolConfig.model_validate("b")]
+        )
         build(
             cfg,
             LoomSession(user_id="u", session_id="s"),
@@ -564,7 +570,9 @@ class TestBuilderWithDefaults:
         ws = WorkspacePaths(project_root=tmp_path, workspace_name="warp")
         src = FileConfigSource(workspace=ws, env="dev")
         mocker.patch.object(
-            src, "get_app_config", return_value=AppConfig(session=None, conversation=None, defaults=None)
+            src,
+            "get_app_config",
+            return_value=AppConfig(session=None, conversation=None, defaults=None),
         )
         # Prompt ya resuelto → la hidratación es no-op y la identidad se preserva.
         agent_cfg = AgentConfig(
@@ -699,7 +707,9 @@ class TestFileSourceToolHydration:
 
         src = FileConfigSource(workspace=ws, env="dev")
         mocker.patch.object(
-            src, "get_app_config", return_value=AppConfig(session=None, conversation=None, defaults=None)
+            src,
+            "get_app_config",
+            return_value=AppConfig(session=None, conversation=None, defaults=None),
         )
         return src
 

@@ -106,7 +106,7 @@ class LoomEvals:
             for name, report in pairs:
                 if isinstance(name, str):
                     try:
-                        report.evaluator_name = name
+                        setattr(report, "evaluator_name", name)
                     except Exception:
                         pass
                 reports.append(report)

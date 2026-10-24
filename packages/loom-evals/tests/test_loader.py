@@ -227,6 +227,7 @@ class TestToEvaluatorFieldExclusion:
 # _to_evaluator — tipos sin rubric (EVL-E13 a EVL-E17)
 # ---------------------------------------------------------------------------
 
+
 class TestToEvaluatorNoRubric:
     """EVL-E13 a EVL-E17"""
 

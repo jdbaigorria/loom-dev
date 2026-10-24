@@ -240,7 +240,7 @@ def _to_evaluator(evaluators_cfg: list[EvaluatorConfig]) -> list[Evaluator]:
 def _unique_evaluator_name(cfg: EvaluatorConfig, used: list[str]) -> str:
     if cfg.name:
         return cfg.name
-    name = cfg.type
+    name: str = cfg.type
     n = 2
     while name in used:
         name = f"{cfg.type}_{n}"

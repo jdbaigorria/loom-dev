@@ -68,13 +68,12 @@ def _overall_score(report_cls: type, scores: list, detailed: list) -> float:
     params = [
         p
         for p in inspect.signature(fn).parameters.values()
-        if p.name not in {"cls", "self"}
-        and p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)
+        if p.name not in {"cls", "self"} and p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)
     ]
     args: list = [scores]
     if len(params) >= 2:
         args.append(detailed)
-    return fn(*args)
+    return float(fn(*args))
 
 
 def split_reports(result, names: list[str]) -> list[tuple[str, object]]:
@@ -133,7 +132,11 @@ def split_reports(result, names: list[str]) -> list[tuple[str, object]]:
         fields = getattr(report_cls, "model_fields", {})
         if "evaluator_name" in fields:
             data["evaluator_name"] = evaluator
-        sub = report_cls.model_validate(data) if hasattr(report_cls, "model_validate") else report_cls(**data)
+        sub = (
+            report_cls.model_validate(data)
+            if hasattr(report_cls, "model_validate")
+            else report_cls(**data)
+        )
         try:
             sub.evaluator_name = evaluator
         except Exception:

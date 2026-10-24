@@ -51,6 +51,4 @@ class CustomSession(StrictConfig):
     config: dict[str, Any] = Field(default_factory=dict)
 
 
-SessionConfig = Annotated[
-    S3Session | FileSession | CustomSession, Field(discriminator="provider")
-]
+SessionConfig = Annotated[S3Session | FileSession | CustomSession, Field(discriminator="provider")]

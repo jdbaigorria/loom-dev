@@ -630,8 +630,7 @@ class TestValidateAgent:
         self._make_agent_yaml(
             fresh_paths,
             "badbuiltin_agent",
-            "name: badbuiltin_agent\nsystem_prompt: |-\n  texto inline\n"
-            "tools:\n  - builtin.nope\n",
+            "name: badbuiltin_agent\nsystem_prompt: |-\n  texto inline\ntools:\n  - builtin.nope\n",
         )
 
         results = validate_agent("badbuiltin_agent")
