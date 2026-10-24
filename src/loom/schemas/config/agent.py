@@ -8,6 +8,7 @@ from .conversations import ConversationConfig
 from .hook import HookConfig
 from .mcp import MCPServerConfig
 from .models import ModelConfig
+from .plugin import PluginConfig
 from .prompt import PromptConfig
 from .retry import RetryStrategyConfig
 from .strict import StrictConfig
@@ -31,6 +32,7 @@ class AgentConfig(StrictConfig):
     tools: list[ToolConfig] | None = None
     mcp_servers: list[MCPServerConfig] | None = None
     hooks: list[HookConfig] | None = None
+    plugins: list[PluginConfig] | None = None
     # How tools are executed within a single turn. None → Strands default
     # (concurrent). Requires a Strands build with pluggable tool executors.
     tool_executor: Literal["concurrent", "sequential"] | None = None
@@ -45,6 +47,8 @@ class AgentConfig(StrictConfig):
             return self
         if self.conversation is not None:
             raise ValueError("'conversation' is not supported when kind is 'bidi'.")
+        if self.plugins is not None:
+            raise ValueError("'plugins' is not supported when kind is 'bidi'.")
         if not isinstance(self.model, str):
             from loom.schemas.config.models import CustomModelConfig
 
