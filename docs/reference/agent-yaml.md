@@ -183,6 +183,8 @@ List of MCP server configs. Two transports:
 
 `kind: bidi` does not accept `tool_executor`. Strands 1.57.2 removed that argument from `BidiAgent`, and Loom raises `AgentConfigError` instead of forwarding it.
 
+Feature-detected: on a Strands build without pluggable executors, setting this field raises a `LoomStrandsCompatError` at load time.
+
 ### plugins
 
 ```yaml
@@ -208,4 +210,21 @@ context: auto    # auto | agentic | off
 
 Same shape as `model` (a profile name or an inline model). It cannot be a list or a fallback. Loom builds it with `get_model()`, including the per-run `model_params` overlay, and passes it as `Agent(aux_model=...)`. Side calls (summaries, memory extraction, classifiers) use it before the primary model. `kind: bidi` rejects it.
 
-Feature-detected: on a Strands build without pluggable executors, setting this field raises a `LoomStrandsCompatError` at load time.
+### memory
+
+```yaml
+memory:
+  stores:
+    - file: { name: notes, description: "Facts about {user_id}", writable: true }
+    - bedrock_kb:
+        name: policies
+        config: { knowledge_base_id: ABC123XYZ }
+        scope: "{user_id}"
+  search_tool: true
+  add_tool: false
+  injection: true
+```
+
+`{user_id}` and `{session_id}` are filled from the session at build time. `file` stores files under `.loom/memory` unless `storage` is set on the store or on `app.yml`. `bedrock_kb` receives the per-run `boto_session` as its runtime client. A dotted key imports a custom store. `kind: bidi` rejects `memory`.
+
+`builtin.kb` is a tool the model calls when it decides to. A `bedrock_kb` store injects matches before the turn and can write when `writable` is true.

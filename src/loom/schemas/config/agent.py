@@ -7,6 +7,7 @@ from pydantic import model_validator
 from .conversations import ConversationConfig
 from .hook import HookConfig
 from .mcp import MCPServerConfig
+from .memory import MemoryConfig
 from .models import ModelConfig
 from .output import StructuredOutputConfig
 from .plugin import PluginConfig
@@ -38,6 +39,7 @@ class AgentConfig(StrictConfig):
     plugins: list[PluginConfig] | None = None
     # auto | agentic | off, a strategy dict, or {import_path, params}.
     context: str | dict | None = None
+    memory: MemoryConfig | None = None
     # How tools are executed within a single turn. None → Strands default
     # (concurrent). Requires a Strands build with pluggable tool executors.
     tool_executor: Literal["concurrent", "sequential"] | None = None
@@ -56,6 +58,8 @@ class AgentConfig(StrictConfig):
             raise ValueError("'plugins' is not supported when kind is 'bidi'.")
         if self.context is not None:
             raise ValueError("'context' is not supported when kind is 'bidi'.")
+        if self.memory is not None:
+            raise ValueError("'memory' is not supported when kind is 'bidi'.")
         if self.aux_model is not None:
             raise ValueError("'aux_model' is not supported when kind is 'bidi'.")
         if not isinstance(self.model, str):

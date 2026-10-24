@@ -42,6 +42,7 @@ from .loaders.context import conversation_is_none, get_context
 from .loaders.conversation import get_conversation_manager
 from .loaders.hook import get_hooks
 from .loaders.mcp import get_mcp_clients
+from .loaders.memory import get_memory
 from .loaders.model import get_model, is_router_model, model_log_label
 from .loaders.output import get_output_class, output_target
 from .loaders.plugin import get_plugins
@@ -169,6 +170,15 @@ def build(
         trace = RoutingTraceHook()
         hooks = [*(hooks or []), trace]
 
+    storage = (
+        get_storage(
+            app_config.storage,
+            metadata_dir=paths.metadata_dir if paths else None,
+            overlay=model_params,
+        )
+        if app_config.storage
+        else None
+    )
     # Params shared by both kinds. Bidi reuses every loader except the model
     # (a BidiModel) and omits conversation/structured-output/retry.
     shared_params = {
@@ -184,13 +194,7 @@ def build(
         if app_config.session
         else None,
         "hooks": hooks,
-        "storage": get_storage(
-            app_config.storage,
-            metadata_dir=paths.metadata_dir if paths else None,
-            overlay=model_params,
-        )
-        if app_config.storage
-        else None,
+        "storage": storage,
     }
 
     if agent_config.kind == "bidi":
@@ -249,6 +253,15 @@ def build(
         else None,
         "context_manager": context_manager,
         "aux_model": aux,
+        "memory_manager": get_memory(
+            agent_config.memory,
+            session,
+            metadata_dir=paths.metadata_dir if paths else None,
+            storage=storage,
+            overlay=model_params,
+        )
+        if agent_config.memory
+        else None,
     }
 
     clean_params = {k: v for k, v in {**shared_params, **agent_only}.items() if v is not None}
