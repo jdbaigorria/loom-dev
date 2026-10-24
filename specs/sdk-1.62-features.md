@@ -35,6 +35,7 @@ sistema ajustado. Por eso Loom puede ofrecerlas **de forma declarativa, sin depe
 | `aux_model` | 1.58.0 | Modelo para las llamadas secundarias: resumen, extracción de memoria, clasificador de HITL, steering, juez de `goal` | No |
 | `baggage_attributes` | 1.60.0 | Atributos de *baggage* de OTel por invocación | No |
 | `trace_attributes` | ≤ 1.34.0 | Atributos de traza de OTel | No |
+| `model=ModelRouter(...)` | 1.52.0 (`ClassifierStrategy`: 1.54.0) | Varios modelos candidatos: failover ordenado, o routing con un clasificador | No: un solo modelo |
 
 Las versiones se obtuvieron escaneando la firma de `Agent.__init__` en todos los wheels publicados
 desde 1.34.0 hasta 1.62.0. La forma de cada configuración se verificó en 1.62.0. Como pudo cambiar
@@ -299,13 +300,117 @@ telemetry:
 - **`concurrent_invocation_mode`:** no se expone. El default del SDK (`throw`) es el comportamiento
   correcto para Loom.
 
+### 3.12 Fallback de modelos: `model` con varios candidatos (`ModelRouter`) · desde 1.52
+
+**Qué hace el SDK** (verificado en 1.62 con modelos de prueba, sin red):
+
+- `Agent(model=ModelRouter([a, b]))`. El router es un `Plugin` que `Agent` acepta en `model=`.
+- Su estrategia por defecto, `FallbackStrategy`, prueba los candidatos en orden. Un candidato que
+  falla seguido baja en la preferencia, y un éxito vuelve a habilitar a los demás.
+- **Cuándo cambia de modelo:** ante cualquier error que el retry no reclame.
+  - **Throttling:** `ModelRetryStrategy` reintenta el mismo modelo con backoff. Al agotar su
+    presupuesto, el router pasa al siguiente candidato y le **reinicia** el presupuesto.
+  - **Errores no reintentables** (acceso denegado, validación, error del modelo): el cambio es
+    inmediato.
+- Si fallan todos, se propaga el último error. `max_switches` limita los cambios por invocación.
+- Rechaza candidatos *stateful* y duplicados (mismo modelo o mismo nombre).
+
+| Caso probado | Resultado |
+|---|---|
+| Error no reintentable en el primario | 1 intento → responde el respaldo |
+| Throttling en el primario | 6 intentos (retry por defecto del SDK) → responde el respaldo |
+| Fallan todos los candidatos | Se propaga el último error |
+
+```yaml
+# Forma corta: perfiles o modelos inline, en orden de preferencia
+model: [powerful, economic]
+
+# Forma completa
+model:
+  fallback:
+    - powerful
+    - economic
+    - name: openai-respaldo          # nombre del candidato; obligatorio si es inline
+      provider: openai
+      params: { model_id: gpt-4o }
+  max_switches: 2
+
+# Reutilizable desde warp/config/profiles.toml:
+#   [model.resiliente]
+#   fallback = ["powerful", "economic"]
+#   max_switches = 2
+model: resiliente
+```
+
+- **Mapeo:** cada candidato es un `ModelConfig` de los que Loom ya acepta (perfil o inline). Se
+  construye con el `get_model()` actual, incluido el overlay por ejecución, y se envuelve en
+  `RoutingCandidate(model, name=…)`. El nombre es el del perfil, o el `name` explícito si es inline.
+  Todo se arma como `ModelRouter(candidatos, max_switches=…)`, con `FallbackStrategy` por defecto.
+- **Validaciones al cargar:**
+  - al menos 2 candidatos, sin nombres ni perfiles repetidos, y sin el mismo `model_id` dos veces.
+    El SDK también los rechaza, pero Loom da el error antes y nombra el candidato;
+  - no se permite con `kind: bidi`, y `aux_model` no puede ser una lista (el SDK solo acepta
+    `Model | str`);
+  - se rechazan los modelos stateful (relacionado con H1);
+  - con strands < 1.52 → `AgentConfigError` con `tip="Requiere strands-agents >= 1.52"`.
+- **Interacción con `retry`:** el presupuesto es **por candidato**. En el peor caso de throttling se
+  hacen `max_attempts × candidatos` llamadas, con backoff en cada tramo. Con el perfil `low` de Loom
+  (3 intentos, backoff desde 1 s) y 3 candidatos son hasta 9 llamadas. La documentación debe
+  recomendar un retry bajo cuando hay fallback, y Loom puede avisar si `max_attempts × candidatos`
+  supera un umbral.
+- **Overlay por ejecución (`model_params`):** hoy se mezcla en el constructor del modelo (p. ej.
+  `boto_session`). Cuando todos los candidatos son del mismo proveedor (lo habitual: Bedrock con
+  distintos modelos o regiones), se aplica a todos. Con proveedores mezclados un único overlay no
+  sirve: un `boto_session` no aplica a OpenAI. Ver O6.
+
+**Qué modelo respondió (metadata y stats)**
+
+- **Hallazgo verificado:** después de un failover, `agent.model` **sigue siendo el primer
+  candidato**. El router aplica el modelo elegido en cada llamada sin cambiarlo. Hoy `dev.py:78`
+  toma el `model_id` de la config, así que las stats reportarían el modelo equivocado.
+- El router guarda su estado en `invocation_state`, bajo una clave que empieza con
+  `strands:model_routing` (está documentado en `RoutingContext`), y lo limpia al terminar la
+  invocación.
+- **Arreglo:** un hook interno de Loom en `AfterModelCallEvent`, agregado automáticamente cuando
+  `model` tiene fallback. Registra en cada llamada el candidato, el `model_id`, el resultado y los
+  `switches`. Lo probé: en el caso de prueba vio `('primario', 'primario-id', 'RuntimeError', 0)` y
+  luego `('respaldo', 'mock', 'OK', 1)`. Como el estado es un dataclass privado (`_RoutingState`),
+  la lectura vive en la ACL con `getattr` tolerante: si no encuentra el estado, informa `None` en vez
+  de fallar.
+- `AgentResponseMetadata.model_id` pasa a ser el modelo que respondió, y se agrega
+  `model_attempts: [{candidate, model_id, outcome}]`. Lo mismo en el registro de stats.
+- Lugares que hoy asumen un único modelo: `core/builder.py:144` (log), `core/builder.py:160`,
+  `core/loaders/model.py:108` (`resolve_model_config`) y `dev.py:78`.
+
+**Routing por costo (opcional, desde 1.54)**
+
+```yaml
+model:
+  route:
+    strategy: classifier
+    classifier: economic        # modelo que decide; agrega una llamada por request
+    candidates:
+      - { model: economic, description: "Preguntas simples y respuestas cortas" }
+      - { model: powerful, description: "Razonamiento de varios pasos y análisis largos" }
+```
+
+Se arma como `ModelRouter([...], strategy=ClassifierStrategy(modelo_clasificador))`. Según el SDK:
+
+- los nombres, descripciones, metadata y el último pedido viajan al proveedor del clasificador, así
+  que no deben contener secretos;
+- si la clasificación falla, se usa el primer candidato;
+- si el candidato elegido falla después, esta estrategia **no** hace failover.
+
+Ver O7.
+
 ---
 
 ## 4. Cambios transversales
 
 | Área | Cambio |
 |---|---|
-| **ACL** (`adapters/strands/__init__.py`) | Símbolos opcionales (`optional=True`): `Plugin`, `InterventionHandler`, `MemoryManager`, `FileMemoryStore`, `BedrockKnowledgeBaseStore`, `AgentSkills`, `ContextOffloader`, `GoalLoop`, `HumanInTheLoop`, `CedarAuthorization`, `Sandbox`, `DockerSandbox`, `SshSandbox`, `Storage`, `LocalFileStorage`, `S3Storage`, `InMemoryStorage`. Cada uno con su ruta pública verificada (Anexo A) |
+| **ACL** (`adapters/strands/__init__.py`) | Símbolos opcionales (`optional=True`): `Plugin`, `InterventionHandler`, `MemoryManager`, `FileMemoryStore`, `BedrockKnowledgeBaseStore`, `AgentSkills`, `ContextOffloader`, `GoalLoop`, `HumanInTheLoop`, `CedarAuthorization`, `Sandbox`, `DockerSandbox`, `SshSandbox`, `Storage`, `LocalFileStorage`, `S3Storage`, `InMemoryStorage`, `ModelRouter`, `RoutingCandidate`, `FallbackStrategy`, `ClassifierStrategy`. Cada uno con su ruta pública verificada (Anexo A). Además, el lector tolerante del estado del router (§3.12) |
+| **Modelo** (`schemas/config/models.py`, `config/profiles.py`) | `ModelConfig` acepta una lista, `{fallback, max_switches}` o `{route: …}`. Los perfiles `[model.x]` aceptan `fallback`. `resolve_model_config` y `dev.py:78` dejan de asumir un único modelo |
 | **Capacidades** (`capabilities.py`) | `agent_accepts(param)` genérico; `snapshot()` lo incluye para cada parámetro de §1, de modo que `loom doctor` muestre qué soporta la versión instalada |
 | **Schemas** | `AgentConfig`: `plugins`, `context`, `memory`, `interventions`, `background_tasks`, `aux_model`, `checkpointing`. `AppConfig`: `sandbox`, `storage`. `TelemetryConfig`: `trace_attributes`, `baggage_attributes`. Módulos nuevos en `schemas/config/` |
 | **Validadores** | `kind: bidi` rechaza todo salvo `storage`; `context` vs `conversation` (§3.2); los nombres de tools referenciados existen (§3.4, §3.7) |
@@ -323,7 +428,7 @@ Cada fase es independiente, deja la suite en verde y suma su documentación:
 
 | Fase | Contenido | Por qué en este orden |
 |---|---|---|
-| 1 | `capabilities.agent_accepts` + **`plugins`** (skills, context_offloader, goal, ruta con puntos y local) + **`context`** + **`aux_model`** | Más valor con menos riesgo; no agrega infraestructura |
+| 1 | `capabilities.agent_accepts` + **fallback de modelos** (§3.12, sin el clasificador) + **`plugins`** (skills, context_offloader, goal, ruta con puntos y local) + **`context`** + **`aux_model`** | Más valor con menos riesgo; no agrega infraestructura. El fallback tiene impacto directo en disponibilidad |
 | 2 | **`storage`** + **`memory`** (file, bedrock_kb) | Memoria necesita definir antes la persistencia y el alcance por usuario (O1) |
 | 3 | **`interventions`** (hitl, cedar + extra) | Requiere verificar la interacción con los *interrupts* de Loom |
 | 4 | **`sandbox`** + **`background_tasks`** | Infraestructura de ejecución |
@@ -351,6 +456,10 @@ baggage attributes`, `feat(agent): experimental checkpointing`.
 - **Detección de versión:** en el job `lowest-direct` (strands 1.34.x), cada campo de §1 posterior a
   1.34 lanza `AgentConfigError` con la versión mínima en el `tip`. Ese mismo test pasa a verde en
   1.62.
+- **Fallback (§3.12):** con un modelo de prueba que siempre falla y `MockModel` como respaldo, sin
+  red: error no reintentable → responde el respaldo tras 1 intento; throttling → responde el
+  respaldo tras agotar el retry; fallan todos → se propaga el último error. La metadata y las stats
+  registran el modelo que respondió y los intentos. Candidatos duplicados → error al cargar.
 - **Contrato:** sumar a `test_strands_contract.py` las rutas del Anexo A, como opcionales que deben
   resolver en 1.62.
 
@@ -388,6 +497,14 @@ baggage attributes`, `feat(agent): experimental checkpointing`.
 - **O5 — `kind: harness`.** Fuera de alcance acá. Este spec cubre la vía nativa del SDK. La
   integración con `strands-harness` solo aportaría su prompt ajustado y su conjunto de tools para
   asistentes autónomos, y se reevalúa cuando el Harness pase de 0.x.
+- **O6 — Overlay por ejecución con proveedores mezclados en el fallback.** Propuesta: si todos los
+  candidatos son de la misma clase de modelo, el overlay se aplica a todos (como hoy). Si hay clases
+  distintas y el overlay no está vacío, `AgentConfigError`, salvo que el llamador lo pase por
+  candidato (p. ej. `model_params={"by_candidate": {"openai-respaldo": {...}}}`). Así nunca se manda
+  un `boto_session` a un modelo que no lo entiende.
+- **O7 — Routing con clasificador.** ¿Entra en la fase 1 junto al fallback, o queda para después?
+  Agrega una llamada al modelo por request y no hace failover. Propuesta: después, cuando el fallback
+  esté en uso.
 
 ---
 
@@ -404,6 +521,9 @@ baggage attributes`, `feat(agent): experimental checkpointing`.
 - [ ] `kind: bidi` con cualquier campo salvo `storage` → error claro.
 - [ ] `loom doctor` muestra qué capacidades soporta la versión instalada de Strands.
 - [ ] La guía nueva incluye la advertencia de seguridad de §3.5.
+- [ ] Un agente con `model: [a, b]` responde con `b` cuando `a` falla, y la metadata y las stats
+      registran `b` como el modelo que respondió, junto con los intentos.
+- [ ] Una cadena de fallback declarada como perfil en `profiles.toml` funciona igual que la inline.
 
 ---
 
@@ -427,3 +547,5 @@ baggage attributes`, `feat(agent): experimental checkpointing`.
 | `Storage`, `LocalFileStorage`, `S3Storage`, `InMemoryStorage` | `strands.storage.*` |
 | `BackgroundTasksConfig` | `strands.background_tasks.BackgroundTasksConfig` (`TypedDict`; Loom pasa un dict) |
 | `ContextManagerConfig` | `strands._context_manager.types` (**privada**; Loom pasa un dict y no la importa) |
+| `ModelRouter`, `RoutingCandidate`, `FallbackStrategy`, `ClassifierStrategy` | `strands.models.routing.*` (`ModelRouter` también en `strands.models`) |
+| Estado del router | Clave `strands:model_routing…` en `invocation_state` (documentada); su valor es `_RoutingState` (**privado**, se lee con `getattr` tolerante) |

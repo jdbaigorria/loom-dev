@@ -449,6 +449,12 @@ strands 1.62 y evals 1.7) **no habría abierto ningún issue**.
   (`adapters/strands/__init__.py:23`) no existe en ninguna versión. El símbolo vive en
   `strands.event_loop._retry`, que es privado. La ruta principal `strands.ModelRetryStrategy`
   funciona: eliminar el fallback.
+- **Perfiles de modelo integrados desactualizados** (`config/profiles.py`): apuntan a modelos de
+  2024 (`anthropic.claude-3-5-sonnet-20241022-v2:0` y `anthropic.claude-3-5-haiku-20241022-v1:0`), y
+  `default` y `powerful` son el mismo modelo. Hay que actualizarlos a modelos vigentes en Bedrock y
+  diferenciar `powerful`. Importa más con el fallback de modelos
+  ([`sdk-1.62-features.md`](sdk-1.62-features.md) §3.12), donde estos perfiles son los candidatos
+  naturales.
 - **Lock:** tras F1–F4, `uv lock --upgrade-package strands-agents --upgrade-package
   strands-agents-evals` para que el entorno de desarrollo use lo mismo que los usuarios
   (strands 1.62.x, mcp 2.x, evals 1.7.x).
