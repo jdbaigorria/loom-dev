@@ -124,6 +124,10 @@ class WorkspacePaths:
         return self.base_dir / "hooks"
 
     @property
+    def plugins_dir(self) -> Path:
+        return self.base_dir / "plugins"
+
+    @property
     def workflows_dir(self) -> Path:
         """Multi-agent workflow definitions (``warp/workflows/``)."""
         return self.base_dir / "workflows"

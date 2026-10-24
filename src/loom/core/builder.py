@@ -43,6 +43,7 @@ from .loaders.hook import get_hooks
 from .loaders.mcp import get_mcp_clients
 from .loaders.model import get_model, is_router_model
 from .loaders.output import get_output_class
+from .loaders.plugin import get_plugins
 from .loaders.prompt import get_prompt
 from .loaders.retry import get_retry_strategy
 from .loaders.routing import RoutingTraceHook
@@ -135,6 +136,7 @@ def build(
     shared_dir = paths.shared_tools_dir if paths else None
     config_dir = paths.agent_config_dir(name) if paths else None
     hooks_dir = paths.hooks_dir if paths else None
+    plugins_dir = paths.plugins_dir if paths else None
 
     selected_tools = _select_tools(agent_config.tools, tools)
     logger.debug(
@@ -198,6 +200,9 @@ def build(
         else None,
         "retry_strategy": get_retry_strategy(agent_config.retry) if agent_config.retry else None,
         "conversation_manager": get_conversation_manager(conversation) if conversation else None,
+        "plugins": get_plugins(agent_config.plugins, plugins_dir, config_dir)
+        if agent_config.plugins
+        else None,
     }
 
     clean_params = {k: v for k, v in {**shared_params, **agent_only}.items() if v is not None}

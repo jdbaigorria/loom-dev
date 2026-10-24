@@ -175,4 +175,17 @@ List of MCP server configs. Two transports:
 
 `kind: bidi` does not accept `tool_executor`. Strands 1.57.2 removed that argument from `BidiAgent`, and Loom raises `AgentConfigError` instead of forwarding it.
 
+### plugins
+
+```yaml
+plugins:
+  - skills: { skills: ./skills }
+  - context_offloader: { max_result_tokens: 2500 }
+  - goal: { goal: "The answer includes the ticket number", max_attempts: 3 }
+  - my_pkg.plugins.AuditPlugin
+  - audit
+```
+
+`skills`, `context_offloader`, and `goal` are built in. A dotted path imports a class. A bare name loads `warp/plugins/<name>.py` and instantiates the PascalCase class. `kind: bidi` rejects `plugins`. Nothing is loaded when the field is omitted.
+
 Feature-detected: on a Strands build without pluggable executors, setting this field raises a `LoomStrandsCompatError` at load time.
