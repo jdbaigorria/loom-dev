@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from loom.adapters.strands import Agent, AgentSkills
+from loom.adapters.strands import Agent, AgentSkills, GoalLoop
 from loom.core.loaders.plugin import get_plugins
 from loom.schemas.config.agent import AgentConfig
 from loom.schemas.config.plugin import PluginConfig
