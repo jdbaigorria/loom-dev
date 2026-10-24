@@ -6,6 +6,7 @@
 | **Fecha** | 2026-10-23 |
 | **Rama** | `fix/strands-1.62-compat` (desde `dev` @ `150f953`) |
 | **Alcance** | Capa anticorrupción (`loom.adapters.strands`), loaders de MCP / bidi / evals / workflows, dependencias, CI |
+| **Relacionado** | [`evals-package-split.md`](evals-package-split.md): evals sale del core al paquete `loom-declarative-evals`, y F4 se implementa ahí |
 
 ---
 
@@ -35,7 +36,7 @@ Resultado de la validación:
 | F1 | MCP `transport: http` falla con `LoomStrandsCompatError` | **Crítica** | strands 1.55 + mcp ≥ 2.0 |
 | F2 | Agente `kind: bidi` + `tool_executor` lanza `TypeError` | **Alta** | strands 1.57.2 |
 | F3 | Ruta `strands.experimental.bidi` deprecada (retiro anunciado para v1.60.0) | Media | strands 1.57.2 |
-| F4 | Evals ≥ 0.3: forma del reporte, nombres de evaluators e `include_inputs` | Media (latente por el pin `<0.2`) | evals 0.3.0 |
+| F4 | Evals ≥ 0.3: forma del reporte, nombres de evaluators e `include_inputs`. Se implementa en `loom-declarative-evals` | Media (latente por el pin `<0.2`) | evals 0.3.0 |
 | F5 | Graphs sin límites de ejecución: Strands avisa "execution is unbounded" | Baja | strands 1.60.0 |
 | F6 | Puntos ciegos en tests/CI: la suite pasa en verde con F1, F2 y F4 | **Alta** (proceso) | — |
 | F7 | Menores: fallback muerto, lock desactualizado, documentación | Baja | — |
@@ -292,6 +293,13 @@ Hoy el pin `strands-agents-evals>=0.1.13,<0.2` (`pyproject.toml:27`) protege a L
 funciona con strands 1.62 (entorno B). Pero evals ya va por la 1.7.0, y para subir el pin hay que
 resolver estos tres puntos.
 
+> **Dónde se implementa:** evals sale del core al paquete `loom-declarative-evals`
+> ([`evals-package-split.md`](evals-package-split.md)), y F4 se hace **después** de esa separación,
+> dentro del paquete nuevo. Las rutas de esta sección son las actuales. Tras la separación:
+> `loom_evals.py` → `loom_evals/runner.py`, `core/loaders/evaluator.py` → `loom_evals/loader.py`,
+> `schemas/config/evals.py` → `loom_evals/schemas.py`, `cli/renders/evals_renderer.py` →
+> `loom_evals/render.py` y `adapters/strands/evals.py` → `loom_evals/adapters/strands_evals.py`.
+
 #### F4.1 Forma del reporte
 
 **Síntoma** (entorno C, `Experiment.run_evaluations` real + el manejo de Loom):
@@ -367,8 +375,10 @@ lo aceptan ni en 0.1.13 ni en 1.7.0, y lanzan `TypeError`. Es el `_INCLUDE_INPUT
 
 #### F4.4 Rango de dependencia
 
-Con F4.1–F4.3 implementados: `strands-agents-evals>=0.1.13,<2.0`. Así se soportan las dos formas de
-reporte, y el job `lowest-direct` sigue probando 0.1.13. `rich` no necesita cambios.
+Con F4.1–F4.3 implementados: `strands-agents-evals>=0.1.13,<2.0`, en el `pyproject.toml` de
+`packages/loom-evals/`. Tras la separación, el core ya no declara esta dependencia. Así se soportan
+las dos formas de reporte, y el job `lowest-direct` sigue probando 0.1.13. `rich` no necesita
+cambios.
 
 **Tests (F4)**, sin mockear `run_evaluations`, con un evaluator determinista sin LLM (ver Anexo A):
 
@@ -420,8 +430,8 @@ strands 1.62 y evals 1.7) **no habría abierto ningún issue**.
 **Arreglo**
 
 1. Ampliar `tests/unit/test_strands_contract.py` (o crear `test_vendor_contract.py`) con los tests
-   sin mocks de F1, F2, F3 y F4. Cada uno debe fallar hoy en el entorno C, pasar tras su arreglo y no
-   necesitar red ni LLM.
+   sin mocks de F1, F2 y F3. Los de F4 van en `packages/loom-evals/tests/`. Cada uno debe fallar hoy
+   en el entorno C, pasar tras su arreglo y no necesitar red ni LLM.
 2. Regla para el futuro: cada punto donde Loom llama al vendor tiene al menos un test de contrato
    sin mock. Los tests con mocks quedan para la lógica de Loom.
 3. Añadir `windows-latest` a la matriz de `.github/workflows/ci.yml` (al menos una versión de
@@ -456,7 +466,8 @@ strands 1.62 y evals 1.7) **no habría abierto ningún issue**.
 | Dependencia | Hoy | Propuesto | Nota |
 |---|---|---|---|
 | `strands-agents` | `>=1.34,<2.0` | sin cambios | La detección de capacidades cubre todo el rango (§3) |
-| `strands-agents-evals` (extra `evals`) | `>=0.1.13,<0.2` | `>=0.1.13,<2.0` | Requiere F4 |
+| `strands-agents-evals` | `>=0.1.13,<0.2` (extra `evals` del core) | `>=0.1.13,<2.0` en `loom-declarative-evals` | Sale del core con la separación; el rango se amplía con F4 |
+| `loom-declarative-evals` (nuevo) | — | extra `evals = ["loom-declarative-evals>=1.0.0rc1,<2"]` como alias | Ver `evals-package-split.md` §4.2 |
 | `mcp` | transitiva | sin pin | `mcp<2` solo como parche temporal (F1.5) |
 | `rich` (extra `cli`) | `>=14.3.3` | sin cambios | evals ≥ 1.6 exige `>=15,<16`; verificado con rich 15.0.0 |
 | `uv.lock` | strands 1.34.1 / evals 0.1.13 | strands 1.62.x / evals 1.7.x | F7 |
@@ -469,24 +480,30 @@ Un commit por paso, en formato Conventional Commits (lo exige el hook `commit-ms
 
 1. `fix(templates): use a Windows-safe name for the init workspace dir` → **F0**, más el arreglo de
    los tests de `test_dev_reload`. Va primero porque desbloquea el checkout en Windows.
-2. `fix(mcp): build http transports through MCPClient(url=) on Strands >= 1.53` → **F1**, más los
+2. **Separación de evals:** los 6 commits de
+   [`evals-package-split.md`](evals-package-split.md) §6. Va antes de F4, para no arreglar código
+   que después se mueve, y antes de F1–F3, para que todo el trabajo siguiente ya use la estructura
+   final.
+3. `fix(mcp): build http transports through MCPClient(url=) on Strands >= 1.53` → **F1**, más los
    tests de contrato.
-3. `fix(build): reject tool_executor on bidi agents when Strands dropped it` → **F2**.
-4. `fix(adapters): prefer strands.bidi over the deprecated experimental path` → **F3**.
-5. `fix(evals): normalize report shapes and evaluator names across evals versions` → **F4.1–F4.3**,
-   quitando los `xfail`.
-6. `build(deps): widen strands-agents-evals to <2.0 and refresh uv.lock` → **F4.4**, **F7**.
-7. `feat(workflow): expose graph execution limits` → **F5**, más la documentación.
-8. `ci: run the suite on windows-latest and guard against NTFS-invalid paths` → **F6.3**, **F0.4**.
-9. `docs: update guides and changelog for Strands 1.62 compatibility` → **F7**.
+4. `fix(build): reject tool_executor on bidi agents when Strands dropped it` → **F2**.
+5. `fix(adapters): prefer strands.bidi over the deprecated experimental path` → **F3**.
+6. `fix(evals): normalize report shapes and evaluator names across evals versions` → **F4.1–F4.3**,
+   en `loom-declarative-evals`, quitando los `xfail`.
+7. `build(deps): widen strands-agents-evals to <2.0 and refresh uv.lock` → **F4.4** (en el
+   paquete), **F7**.
+8. `feat(workflow): expose graph execution limits` → **F5**, más la documentación.
+9. `ci: run the suite on windows-latest and guard against NTFS-invalid paths` → **F6.3**, **F0.4**.
+10. `docs: update guides and changelog for Strands 1.62 compatibility` → **F7**.
 
 ---
 
 ## 8. Criterios de aceptación
 
 - [ ] `uv run poe check` en verde.
-- [ ] La suite pasa sin fallos en:
-  - `uv sync --group dev --resolution lowest-direct` (strands 1.34.x, mcp 1.x, evals 0.1.13);
+- [ ] La suite de **ambos paquetes** (core y `loom-declarative-evals`) pasa sin fallos en:
+  - `uv sync --all-packages --group dev --resolution lowest-direct` (strands 1.34.x, mcp 1.x,
+    evals 0.1.13);
   - el lock nuevo (strands 1.62.x, mcp 2.x, evals 1.7.x);
   - **Windows** y Linux.
 - [ ] El script del Anexo A imprime `OK` en las tres comprobaciones, en los extremos del rango.
