@@ -13,7 +13,7 @@ Thank you for your interest in contributing. This guide covers everything you ne
 ```bash
 git clone https://github.com/jdbaigorria/loom-dev
 cd loom-dev
-uv sync --group dev
+uv sync --all-packages --group dev --all-extras
 pre-commit install --hook-type pre-commit --hook-type commit-msg
 ```
 
@@ -62,17 +62,15 @@ Allowed types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `ci`, `perf`,
 
 ```
 src/loom/
-├── __init__.py                 # Public API: build, build_agent, build_workflow, discover, LoomSession, LoomEvals
+├── __init__.py                 # Public API: build, build_agent, build_workflow, discover, LoomSession
 ├── _entry.py                   # Console-script entry (guards missing [cli] extra)
 ├── dev.py                      # run_dev — dev-only one-shot executor (backs CLI + evals)
 ├── errors.py                   # Public exception surface (re-exports core.exceptions)
-├── loom_evals.py                # LoomEvals: evaluation runner (loaded lazily)
 ├── testing.py                  # Test helpers (MockModel, mock_llm)
 ├── adapters/strands/          # Anti-corruption layer — only place Strands is imported
 │   ├── _resolve.py            # Version-tolerant symbol resolution
-│   ├── capabilities.py        # Feature detection (MCP, tool_executor, Graph…)
-│   └── evals.py               # strands_evals re-exports
-├── cli/                       # Typer CLI commands (requires [cli] extra)
+│   └── capabilities.py        # Feature detection (MCP, tool_executor, Graph…)
+├── cli/                       # Typer CLI; plugins mount via the loom.cli entry-point group
 │   ├── commands/              # One module per command group
 │   └── renders/               # Rich renderers for agent/evals/project output
 ├── config/                    # Project-level config loading

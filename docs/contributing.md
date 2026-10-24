@@ -13,7 +13,7 @@ Thank you for your interest in contributing to Loom. This guide covers setup, wo
 ```bash
 git clone https://github.com/jdbaigorria/loom-dev
 cd loom-dev
-uv sync --all-extras
+uv sync --all-packages --all-extras --group dev
 pre-commit install --hook-type pre-commit --hook-type commit-msg
 ```
 
@@ -40,17 +40,15 @@ uv run poe test     # run the test suite
 
 ```
 src/loom/
-├── __init__.py                 # Public API: build, build_agent, build_workflow, discover, LoomSession, LoomEvals
+├── __init__.py                 # Public API: build, build_agent, build_workflow, discover, LoomSession
 ├── _entry.py                   # Console-script entry (guards missing [cli] extra)
 ├── dev.py                      # run_dev — dev-only one-shot executor (backs CLI + evals)
 ├── errors.py                   # Public exception surface (re-exports core.exceptions)
-├── loom_evals.py                # LoomEvals — evaluation runner (lazy-loaded)
 ├── testing.py                  # Test helpers (MockModel, mock_llm)
 ├── adapters/strands/           # Anti-corruption layer — only place Strands is imported
 │   ├── _resolve.py             # Version-tolerant symbol resolution
-│   ├── capabilities.py         # Feature detection (MCP, tool_executor, Graph…)
-│   └── evals.py                # strands_evals re-exports
-├── cli/                        # Typer CLI commands (requires [cli] extra)
+│   └── capabilities.py         # Feature detection (MCP, tool_executor, Graph…)
+├── cli/                        # Typer CLI; plugins mount via the loom.cli entry-point group
 ├── config/                     # Project-level config loading
 │   ├── defaults.py             # Scalar defaults (region, session path)
 │   ├── profiles.py             # Built-in profiles + user deep-merge

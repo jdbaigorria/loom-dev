@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`loom-declarative-evals` package.** The evaluation runner, `loom evals` CLI, and
+  `strands_evals` adapter moved out of the core into this package (import `loom_evals`).
+  `pip install "loom-declarative[evals]"` remains as an alias. `from loom import LoomEvals`
+  still works and emits a `DeprecationWarning`; use `from loom_evals import LoomEvals`.
+  CLI plugins advertise a Typer app under the `loom.cli` entry-point group. A plugin that
+  fails to load is still mounted and reports the error. `loom doctor` lists installed plugins.
+
 ### Changed
 
 - **`region` removed from `loom.toml`; it lives only in `app.yml` now.** `loom.toml`

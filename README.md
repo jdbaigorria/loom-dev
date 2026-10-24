@@ -41,7 +41,7 @@ runtime can install just the slim core. Not on PyPI yet — install pinned to a
 pip install "loom-declarative @ git+https://github.com/jdbaigorria/loom-dev@vX.Y.Z"
 # Full authoring experience (CLI, wizards, evals, AWS doctor):
 pip install "loom-declarative[all] @ git+https://github.com/jdbaigorria/loom-dev@vX.Y.Z"
-# or pick extras à la carte: [cli], [evals], [aws]
+# or pick extras à la carte: [cli], [evals] (alias of loom-declarative-evals), [aws]
 uv add "loom-declarative[cli] @ git+https://github.com/jdbaigorria/loom-dev@vX.Y.Z"
 ```
 

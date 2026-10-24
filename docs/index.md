@@ -82,7 +82,7 @@ Not on PyPI yet — install pinned to a [release tag](https://github.com/jdbaigo
 === "Pick extras"
     ```bash
     pip install "loom-declarative[cli] @ git+https://github.com/jdbaigorria/loom-dev@vX.Y.Z"    # CLI + wizards
-    pip install "loom-declarative[evals] @ git+https://github.com/jdbaigorria/loom-dev@vX.Y.Z"   # evaluation tooling
+    pip install "loom-declarative[evals] @ git+https://github.com/jdbaigorria/loom-dev@vX.Y.Z"   # alias of loom-declarative-evals
     pip install "loom-declarative[aws] @ git+https://github.com/jdbaigorria/loom-dev@vX.Y.Z"     # AWS/Bedrock checks
     ```
 
