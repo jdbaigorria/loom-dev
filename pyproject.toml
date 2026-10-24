@@ -107,6 +107,7 @@ known-first-party = ["loom", "loom_evals"]
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
 "strands".msg = "Import Strands only via loom.adapters.strands (the anti-corruption layer)."
 "strands_evals".msg = "Import strands_evals only via loom_evals.adapters.strands_evals (the anti-corruption layer)."
+"mcp".msg = "Import mcp only via loom.adapters.strands."
 
 [tool.ruff.lint.per-file-ignores]
 # The ACL is the one place allowed to touch the vendor SDKs directly.
