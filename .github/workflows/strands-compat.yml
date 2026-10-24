@@ -47,10 +47,10 @@ jobs:
         run: |
           if [ "${{ matrix.mode }}" = "lowest" ]; then
             # Lowest direct-dependency versions allowed by pyproject.
-            uv sync --group dev --resolution lowest-direct
+            uv sync --all-packages --group dev --resolution lowest-direct
           else
             # Pinned env, then force the newest Strands from PyPI (canary).
-            uv sync --group dev
+            uv sync --all-packages --group dev
             uv pip install --upgrade strands-agents strands-agents-evals
           fi
 
