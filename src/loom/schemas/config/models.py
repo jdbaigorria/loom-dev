@@ -19,7 +19,7 @@ built-ins plus ``[providers]`` in ``warp/config/profiles.toml``) or a full dotte
       params: { model_id: gpt-4o }
 """
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -72,6 +72,37 @@ class FallbackModelConfig(BaseModel):
     max_switches: int | None = Field(default=None, ge=0)
 
 
-# A model is a profile name, an inline passthrough, an ordered fallback, or a
-# short list of candidates (the same thing as ``fallback`` without a cap).
-ModelConfig = str | CustomModelConfig | FallbackModelConfig | list[str | CustomModelConfig]
+class RouteCandidateConfig(BaseModel):
+    """One candidate the classifier may select."""
+
+    model_config = ConfigDict(extra="forbid")
+    model: str | CustomModelConfig
+    name: str | None = None
+    description: str | None = None
+    metadata: dict[str, Any] | None = None
+
+
+class ClassifierRouteConfig(BaseModel):
+    """Classifier routing. Adds one model call per request and does not fail over."""
+
+    model_config = ConfigDict(extra="forbid")
+    strategy: Literal["classifier"] = "classifier"
+    classifier: str | CustomModelConfig
+    candidates: list[RouteCandidateConfig] = Field(min_length=2)
+    system_prompt: str | None = None
+    timeout: float | None = Field(default=None, gt=0)
+
+
+class RouteModelConfig(BaseModel):
+    """Route each request to one candidate. There is no failover."""
+
+    model_config = ConfigDict(extra="forbid")
+    route: ClassifierRouteConfig
+
+
+# A model is a profile name, an inline passthrough, an ordered fallback, a
+# classifier route, or a short list of candidates (the same thing as ``fallback``
+# without a cap).
+ModelConfig = (
+    str | CustomModelConfig | FallbackModelConfig | RouteModelConfig | list[str | CustomModelConfig]
+)

@@ -365,6 +365,8 @@ def _model_descriptor(model: object) -> str:
     if isinstance(model, dict):
         if "fallback" in model:
             return "fallback"
+        if "route" in model:
+            return "classifier"
         params = model.get("params") or {}
         return str(params.get("model_id") or model.get("import_path", "inline"))
     return "default"

@@ -159,6 +159,26 @@ max_switches = 2
 
 `kind: bidi` does not accept a fallback. A single `model_params` overlay is applied to every candidate only when they are the same model class. Mixed classes need `model_params={"by_candidate": {"openai-backup": {...}}}`.
 
+After a call, response metadata `model_id` is the candidate that answered and `model_attempts` lists each try.
+
+## Route with a classifier
+
+`model.route` picks one candidate per request. The classifier model adds one extra call and does not fail over: if the chosen candidate errors, that error is returned.
+
+```yaml
+model:
+  route:
+    strategy: classifier
+    classifier: economic
+    candidates:
+      - model: economic
+        description: Short questions
+      - model: powerful
+        description: Multi-step reasoning
+```
+
+Names, descriptions and the latest request are sent to the classifier provider. Do not put secrets there. If classification fails, the first candidate is used. `kind: bidi` rejects this form.
+
 After a call, response metadata `model_id` is the candidate that answered, and `model_attempts` lists each try.
 
 ## Custom provider aliases
