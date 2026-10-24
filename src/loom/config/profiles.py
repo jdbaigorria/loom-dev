@@ -35,7 +35,7 @@ from omegaconf import OmegaConf
 from pydantic import BaseModel, ConfigDict, Field
 
 from loom.schemas.config.conversations import ConversationConfig
-from loom.schemas.config.models import CustomModelConfig, FallbackModelConfig
+from loom.schemas.config.models import CustomModelConfig, FallbackModelConfig, RouteModelConfig
 from loom.schemas.config.retry import RetryConfig
 from loom.utils.loaders import load_toml
 
@@ -98,7 +98,9 @@ class Profiles(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    model: dict[str, CustomModelConfig | FallbackModelConfig] = Field(default_factory=dict)
+    model: dict[str, CustomModelConfig | FallbackModelConfig | RouteModelConfig] = Field(
+        default_factory=dict
+    )
     retry: dict[str, RetryConfig] = Field(default_factory=dict)
     conversation: dict[str, ConversationConfig] = Field(default_factory=dict)
     providers: dict[str, str] = Field(default_factory=dict)

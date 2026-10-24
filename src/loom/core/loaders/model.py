@@ -21,14 +21,19 @@ from loom.adapters import strands as sx
 from loom.adapters.strands import Model
 from loom.config.profiles import get_profiles
 from loom.core.exceptions import AgentConfigError, ModelLoadError
-from loom.schemas.config.models import CustomModelConfig, FallbackModelConfig, ModelConfig
+from loom.schemas.config.models import (
+    CustomModelConfig,
+    FallbackModelConfig,
+    ModelConfig,
+    RouteModelConfig,
+)
 
 logger = logging.getLogger(__name__)
 
 
 def resolve_model_config(
     model: ModelConfig,
-) -> CustomModelConfig | FallbackModelConfig | list[str | CustomModelConfig]:
+) -> CustomModelConfig | FallbackModelConfig | RouteModelConfig | list[str | CustomModelConfig]:
     """Return the concrete config for a profile name, inline model, or fallback.
 
     Raises:
@@ -36,7 +41,7 @@ def resolve_model_config(
     """
     if isinstance(model, list):
         return model
-    if isinstance(model, (CustomModelConfig, FallbackModelConfig)):
+    if isinstance(model, (CustomModelConfig, FallbackModelConfig, RouteModelConfig)):
         return model
     profiles = get_profiles()
     cfg = profiles.model.get(model)
@@ -48,18 +53,34 @@ def resolve_model_config(
     return cfg
 
 
+def model_log_label(model: ModelConfig) -> str:
+    """Short label for the build log."""
+    try:
+        resolved = resolve_model_config(model)
+    except Exception:
+        return model if isinstance(model, str) else "inline"
+    if isinstance(resolved, RouteModelConfig):
+        return "classifier"
+    if isinstance(resolved, (FallbackModelConfig, list)):
+        return "fallback"
+    return model if isinstance(model, str) else "inline"
+
+
 def is_router_model(model: ModelConfig) -> bool:
     """True when ``model`` selects more than one candidate."""
     try:
         resolved = resolve_model_config(model)
     except ModelLoadError:
         return False
-    return isinstance(resolved, (FallbackModelConfig, list))
+    return isinstance(resolved, (FallbackModelConfig, RouteModelConfig, list))
 
 
 def declared_model_id(model: ModelConfig) -> str | None:
     """Best-effort id of the first candidate, for logs before a call runs."""
     resolved = resolve_model_config(model)
+    if isinstance(resolved, RouteModelConfig):
+        first = resolved.route.candidates[0].model
+        return declared_model_id(first)
     if isinstance(resolved, CustomModelConfig):
         return resolved.model_id
     candidates = resolved if isinstance(resolved, list) else resolved.fallback
@@ -118,6 +139,8 @@ def _build_custom_model(config: CustomModelConfig, overlay: dict[str, Any] | Non
 def get_model(model: ModelConfig, overlay: dict[str, Any] | None = None) -> Any:
     """Instantiate the configured model, or a ``ModelRouter`` when several are declared."""
     resolved = resolve_model_config(model)
+    if isinstance(resolved, RouteModelConfig):
+        return _build_route(resolved, overlay)
     if isinstance(resolved, (FallbackModelConfig, list)):
         return _build_router(resolved, overlay)
     logger.debug(
@@ -200,3 +223,56 @@ def _build_router(
         model = _build_custom_model(cfg, candidate_overlay or None)
         built.append(sx.RoutingCandidate(model=model, name=name))
     return sx.ModelRouter(built, max_switches=max_switches)
+
+
+def _single_model(model: str | CustomModelConfig, *, role: str) -> tuple[str, CustomModelConfig]:
+    if isinstance(model, str):
+        concrete = resolve_model_config(model)
+        if not isinstance(concrete, CustomModelConfig):
+            raise AgentConfigError(f"{role} '{model}' must be a single model, not a router.")
+        return model, concrete
+    return model.name or role, model
+
+
+def _build_route(resolved: RouteModelConfig, overlay: dict[str, Any] | None) -> Any:
+    if sx.ModelRouter is None or sx.RoutingCandidate is None or sx.ClassifierStrategy is None:
+        raise AgentConfigError(
+            "The installed Strands version cannot classify model candidates.",
+            tip="Requiere strands-agents >= 1.54",
+        )
+    route = resolved.route
+    entries: list[tuple[str, CustomModelConfig, str | None, dict | None]] = []
+    for index, candidate in enumerate(route.candidates):
+        name, cfg = _single_model(candidate.model, role=f"candidate {index}")
+        if candidate.name:
+            name = candidate.name
+        entries.append((name, cfg, candidate.description, candidate.metadata))
+    names = [name for name, *_ in entries]
+    if len(names) != len(set(names)):
+        raise AgentConfigError(f"Route candidate names must be unique: {names}")
+    classes = {resolve_import_path(cfg) for _, cfg, _, _ in entries}
+    by_candidate = (overlay or {}).get("by_candidate") or {}
+    shared = _shared_overlay(overlay)
+    if len(classes) > 1 and shared and not by_candidate:
+        raise AgentConfigError(
+            "model_params cannot be applied to route candidates of different classes.",
+            tip='Pass model_params={"by_candidate": {"name": {...}}} for each candidate.',
+        )
+    built = []
+    for name, cfg, description, metadata in entries:
+        candidate_overlay = dict(by_candidate.get(name) or {})
+        if len(classes) == 1 and shared:
+            candidate_overlay = {**shared, **candidate_overlay}
+        model = _build_custom_model(cfg, candidate_overlay or None)
+        built.append(
+            sx.RoutingCandidate(model=model, name=name, description=description, metadata=metadata)
+        )
+    _, classifier_cfg = _single_model(route.classifier, role="classifier")
+    classifier = _build_custom_model(classifier_cfg, shared)
+    kwargs: dict[str, Any] = {}
+    if route.system_prompt is not None:
+        kwargs["system_prompt"] = route.system_prompt
+    if route.timeout is not None:
+        kwargs["timeout"] = route.timeout
+    strategy = sx.ClassifierStrategy(classifier, **kwargs)
+    return sx.ModelRouter(built, strategy=strategy)
