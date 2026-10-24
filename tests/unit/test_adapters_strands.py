@@ -28,6 +28,8 @@ _OPTIONAL = {
     "SequentialToolExecutor",
     "StrandsTelemetry",
     "MCPClient",
+    "BidiAgent",
+    "CedarAuthorization",
 }
 
 
@@ -90,8 +92,11 @@ class TestCapabilities:
             "telemetry",
             "mcp",
             "bidi",
+            *(f"agent.{name}" for name in capabilities.AGENT_PARAMS),
         }
         assert all(isinstance(v, bool) for v in snap.values())
+        assert snap["agent.plugins"] is True
+        assert capabilities.agent_accepts("not_a_param") is False
 
 
 def test_bidi_import_is_not_the_deprecated_path():

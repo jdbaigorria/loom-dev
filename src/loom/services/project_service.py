@@ -150,7 +150,21 @@ def run_doctor(check_aws: bool = True) -> dict[str, list[ValidationResult]]:
     except (ProjectNotInitializedError, NoAgentsFoundError):
         pass  # no project or no agents: empty section, not a doctor error
 
+    from loom.adapters.strands import capabilities
     from loom.cli.plugins import cli_plugin_status
+
+    for name, ok in capabilities.snapshot().items():
+        if not name.startswith("agent."):
+            continue
+        results["system"].append(
+            ValidationResult(
+                ok=ok,
+                message=f"strands accepts {name.removeprefix('agent.')}",
+                tip=None
+                if ok
+                else "The installed strands-agents build does not accept this parameter.",
+            )
+        )
 
     for name, dist, dist_version, error in cli_plugin_status():
         label = f"{name} ({dist} {dist_version})"

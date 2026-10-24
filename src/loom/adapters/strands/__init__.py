@@ -134,6 +134,41 @@ MCPClient = resolve(
     "strands.tools.mcp.MCPClient", "strands.tools.mcp.mcp_client.MCPClient", optional=True
 )
 
+# --- SDK 1.62 surfaces (optional; loaders raise AgentConfigError when absent) --
+Plugin = resolve("strands.plugins.Plugin", "strands.Plugin", optional=True)
+InterventionHandler = resolve("strands.interventions.handler.InterventionHandler", optional=True)
+MemoryManager = resolve("strands.memory.MemoryManager", optional=True)
+FileMemoryStore = resolve("strands.vended_memory_stores.FileMemoryStore", optional=True)
+BedrockKnowledgeBaseStore = resolve(
+    "strands.vended_memory_stores.bedrock_knowledge_base.BedrockKnowledgeBaseStore",
+    optional=True,
+)
+AgentSkills = resolve("strands.vended_plugins.skills.AgentSkills", optional=True)
+ContextOffloader = resolve(
+    "strands.vended_plugins.context_offloader.ContextOffloader", optional=True
+)
+GoalLoop = resolve("strands.vended_plugins.goal.GoalLoop", optional=True)
+HumanInTheLoop = resolve("strands.vended_interventions.HumanInTheLoop", optional=True)
+CedarAuthorization = resolve("strands.vended_interventions.cedar.CedarAuthorization", optional=True)
+Sandbox = resolve("strands.sandbox.Sandbox", optional=True)
+DockerSandbox = resolve("strands.sandbox.docker.DockerSandbox", optional=True)
+SshSandbox = resolve("strands.sandbox.ssh.SshSandbox", optional=True)
+Storage = resolve("strands.storage.Storage", optional=True)
+LocalFileStorage = resolve("strands.storage.LocalFileStorage", optional=True)
+S3Storage = resolve("strands.storage.S3Storage", optional=True)
+InMemoryStorage = resolve("strands.storage.InMemoryStorage", optional=True)
+ModelRouter = resolve(
+    "strands.models.routing.ModelRouter", "strands.models.ModelRouter", optional=True
+)
+RoutingCandidate = resolve("strands.models.routing.RoutingCandidate", optional=True)
+FallbackStrategy = resolve("strands.models.routing.FallbackStrategy", optional=True)
+ClassifierStrategy = resolve("strands.models.routing.ClassifierStrategy", optional=True)
+AfterModelCallEvent = resolve(
+    "strands.hooks.AfterModelCallEvent",
+    "strands.hooks.events.AfterModelCallEvent",
+    optional=True,
+)
+
 # --- Telemetry -----------------------------------------------------------------
 # Optional: OpenTelemetry setup helper. Gated by capabilities; telemetry setup is
 # a no-op (with a warning) when absent.
@@ -154,30 +189,52 @@ ToolResultContent = resolve("strands.types.tools.ToolResultContent")
 
 __all__ = [
     "AfterInvocationEvent",
+    "AfterModelCallEvent",
     "AfterToolCallEvent",
     "Agent",
+    "AgentSkills",
     "AgentResult",
+    "BedrockKnowledgeBaseStore",
     "BedrockModel",
     "BidiAgent",
+    "CedarAuthorization",
+    "ClassifierStrategy",
+    "ContextOffloader",
     "BeforeInvocationEvent",
     "BeforeToolCallEvent",
     "ConcurrentToolExecutor",
     "ConversationManager",
     "DecoratedFunctionTool",
+    "DockerSandbox",
+    "FallbackStrategy",
+    "FileMemoryStore",
     "FileSessionManager",
+    "GoalLoop",
+    "HumanInTheLoop",
+    "InMemoryStorage",
+    "InterventionHandler",
+    "LocalFileStorage",
     "HookProvider",
     "HookRegistry",
     "LoomStrandsCompatError",
     "GraphBuilder",
+    "MCPClient",
+    "MemoryManager",
     "Messages",
     "Model",
-    "MCPClient",
+    "ModelRouter",
     "ModelRetryStrategy",
     "MultiAgentResult",
     "NullConversationManager",
+    "Plugin",
+    "RoutingCandidate",
     "S3SessionManager",
+    "S3Storage",
+    "Sandbox",
     "SessionManager",
     "SequentialToolExecutor",
+    "SshSandbox",
+    "Storage",
     "SlidingWindowConversationManager",
     "StrandsTelemetry",
     "StreamEvent",

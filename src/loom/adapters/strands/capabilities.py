@@ -102,9 +102,37 @@ def has_bidi() -> bool:
     )
 
 
+# Agent.__init__ parameters Loom can declare. The floor is 1.62, which accepts
+# all of them; the probe still turns a missing name into a friendly error.
+AGENT_PARAMS: tuple[str, ...] = (
+    "plugins",
+    "context_manager",
+    "interventions",
+    "checkpointing",
+    "memory_manager",
+    "sandbox",
+    "storage",
+    "background_tasks",
+    "aux_model",
+    "baggage_attributes",
+    "trace_attributes",
+)
+
+
+@cache
+def agent_accepts(param: str) -> bool:
+    """True if the installed ``Agent.__init__`` accepts ``param``."""
+    import inspect
+
+    from loom.adapters.strands import Agent
+
+    accepted = inspect.signature(Agent.__init__).parameters
+    return param in accepted and param != "self"
+
+
 def snapshot() -> dict[str, bool]:
     """Return a dict of all capability flags (handy for ``loom doctor``/logging)."""
-    return {
+    flags = {
         "tool_executor": has_tool_executor(),
         "plugins": has_plugins(),
         "a2a": has_a2a(),
@@ -115,3 +143,5 @@ def snapshot() -> dict[str, bool]:
         "mcp": has_mcp(),
         "bidi": has_bidi(),
     }
+    flags.update({f"agent.{name}": agent_accepts(name) for name in AGENT_PARAMS})
+    return flags
