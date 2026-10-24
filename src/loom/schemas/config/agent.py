@@ -27,6 +27,8 @@ class AgentConfig(StrictConfig):
     system_prompt: PromptConfig = PromptConfig(prompt="prompt.md")
     # Profile name (resolved from loom.config.profiles) or an inline config.
     model: ModelConfig = "default"
+    # Profile name or inline model for SDK side calls (summary, memory, classifiers).
+    aux_model: ModelConfig | None = None
     retry: RetryStrategyConfig = "low"
     output: str | None = None
     tools: list[ToolConfig] | None = None
@@ -53,9 +55,21 @@ class AgentConfig(StrictConfig):
             raise ValueError("'plugins' is not supported when kind is 'bidi'.")
         if self.context is not None:
             raise ValueError("'context' is not supported when kind is 'bidi'.")
+        if self.aux_model is not None:
+            raise ValueError("'aux_model' is not supported when kind is 'bidi'.")
         if not isinstance(self.model, str):
             from loom.schemas.config.models import CustomModelConfig
 
             if not isinstance(self.model, CustomModelConfig):
                 raise ValueError("model fallback is not supported when kind is 'bidi'.")
+        return self
+
+    @model_validator(mode="after")
+    def _aux_model_is_a_single_model(self):
+        if self.aux_model is None:
+            return self
+        from loom.schemas.config.models import CustomModelConfig
+
+        if not isinstance(self.aux_model, (str, CustomModelConfig)):
+            raise ValueError("aux_model cannot be a fallback or a list.")
         return self

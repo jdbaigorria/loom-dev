@@ -196,4 +196,8 @@ context: auto    # auto | agentic | off
 
 `off` passes `False`. A dict is forwarded as the SDK config. `import_path` builds a custom manager. When `context` is set, `conversation` must be `none` (or omitted, which resolves to `none`). A stateful model has the same rule. `kind: bidi` rejects `context`.
 
+### aux_model
+
+Same shape as `model` (a profile name or an inline model). It cannot be a list or a fallback. Loom builds it with `get_model()`, including the per-run `model_params` overlay, and passes it as `Agent(aux_model=...)`. Side calls (summaries, memory extraction, classifiers) use it before the primary model. `kind: bidi` rejects it.
+
 Feature-detected: on a Strands build without pluggable executors, setting this field raises a `LoomStrandsCompatError` at load time.
