@@ -38,6 +38,8 @@ Provider configuration: Bedrock is the typed, tested path; every other provider
 ``provider: custom`` passthrough (``import_path`` + ``params``).
 """
 
+import importlib.util
+import warnings
 from typing import TYPE_CHECKING
 
 from loom.core.builder import build, build_agent
@@ -46,8 +48,8 @@ from loom.schemas.context import LoomSession
 from loom.schemas.target import TargetInfo
 
 if TYPE_CHECKING:
-    from loom.loom_evals import LoomEvals
     from loom.ports import ConfigSource
+    from loom_evals import LoomEvals
 
 __all__ = [
     "LoomEvals",
@@ -78,10 +80,19 @@ def discover(source: "ConfigSource | None" = None) -> list[TargetInfo]:
 
 
 def __getattr__(name: str) -> object:
-    """Lazily expose ``LoomEvals`` so ``import loom`` does not pull in the evals
-    stack (``strands_evals``), which lives behind the optional ``evals`` extra."""
+    """Lazily expose ``LoomEvals`` from the ``loom-declarative-evals`` package."""
     if name == "LoomEvals":
-        from loom.loom_evals import LoomEvals
+        warnings.warn(
+            "`from loom import LoomEvals` is deprecated; use `from loom_evals import LoomEvals`.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if importlib.util.find_spec("loom_evals") is None:
+            raise ImportError(
+                "LoomEvals moved to the 'loom-declarative-evals' package: "
+                "pip install loom-declarative-evals"
+            )
+        from loom_evals import LoomEvals
 
         return LoomEvals
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

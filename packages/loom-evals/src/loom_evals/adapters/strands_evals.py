@@ -1,4 +1,4 @@
-"""loom.adapters.strands.evals — Single import surface for ``strands_evals``.
+"""loom_evals.adapters.strands_evals — Single import surface for ``strands_evals``.
 
 Kept separate from the core ``loom.adapters.strands`` namespace because the
 evaluation stack is a distinct dependency (``strands-agents-evals``) with its own
@@ -8,7 +8,7 @@ from here.
 
 from __future__ import annotations
 
-from ._resolve import resolve
+from loom.adapters.strands import resolve
 
 # --- Core eval primitives ------------------------------------------------------
 Case = resolve("strands_evals.Case", "strands_evals.types.Case")

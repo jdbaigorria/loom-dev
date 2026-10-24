@@ -1,7 +1,7 @@
 """
 tests/unit/test_loom_evals.py
 
-Cubre loom.loom_evals.LoomEvals:
+Cubre loom_evals.runner.LoomEvals:
   - __init__
   - _build_task_function (flags needs_session / needs_trajectory)
   - task() (función interna)
@@ -11,7 +11,7 @@ Cubre loom.loom_evals.LoomEvals:
   - check_regression()
   - failed_cases()
 
-Los tests que dependen de rutas mockean `loom.loom_evals.build_workspace_paths`.
+Los tests que dependen de rutas mockean `loom_evals.runner.build_workspace_paths`.
 """
 
 import json
@@ -20,7 +20,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from loom.loom_evals import LoomEvals
+from loom_evals.runner import LoomEvals
 
 # ---------------------------------------------------------------------------
 # Helpers — evaluadores reales para flags
@@ -28,37 +28,37 @@ from loom.loom_evals import LoomEvals
 
 
 def _output_ev():
-    from loom.adapters.strands.evals import OutputEvaluator
+    from loom_evals.adapters.strands_evals import OutputEvaluator
 
     return OutputEvaluator(rubric="test")
 
 
 def _trajectory_ev():
-    from loom.adapters.strands.evals import TrajectoryEvaluator
+    from loom_evals.adapters.strands_evals import TrajectoryEvaluator
 
     return TrajectoryEvaluator(rubric="test")
 
 
 def _helpfulness_ev():
-    from loom.adapters.strands.evals import HelpfulnessEvaluator
+    from loom_evals.adapters.strands_evals import HelpfulnessEvaluator
 
     return HelpfulnessEvaluator()
 
 
 def _faithfulness_ev():
-    from loom.adapters.strands.evals import FaithfulnessEvaluator
+    from loom_evals.adapters.strands_evals import FaithfulnessEvaluator
 
     return FaithfulnessEvaluator()
 
 
 def _interactions_ev():
-    from loom.adapters.strands.evals import InteractionsEvaluator
+    from loom_evals.adapters.strands_evals import InteractionsEvaluator
 
     return InteractionsEvaluator(rubric="test")
 
 
 def _make_case(**kwargs):
-    from loom.adapters.strands.evals import Case
+    from loom_evals.adapters.strands_evals import Case
 
     defaults = {"name": "c1", "input": "¿Cuál es la capital de Francia?"}
     return Case(**{**defaults, **kwargs})
@@ -108,14 +108,14 @@ class TestBuildTaskFunctionFlags:
     def test_solo_output_no_activa_telemetry(self):
         """EVL-LE02: OutputEvaluator → needs_session=False, StrandsEvalsTelemetry no se llama"""
         ev = LoomEvals("agent")
-        with patch("loom.loom_evals.StrandsEvalsTelemetry") as mock_tel:
+        with patch("loom_evals.runner.StrandsEvalsTelemetry") as mock_tel:
             ev._build_task_function([_output_ev()])
             mock_tel.assert_not_called()
 
     def test_helpfulness_activa_telemetry(self):
         """EVL-LE03: HelpfulnessEvaluator → needs_session=True, telemetry se inicializa"""
         ev = LoomEvals("agent")
-        with patch("loom.loom_evals.StrandsEvalsTelemetry") as mock_tel:
+        with patch("loom_evals.runner.StrandsEvalsTelemetry") as mock_tel:
             mock_tel.return_value.setup_in_memory_exporter.return_value = mock_tel.return_value
             mock_tel.return_value.in_memory_exporter = MagicMock()
             ev._build_task_function([_helpfulness_ev()])
@@ -124,7 +124,7 @@ class TestBuildTaskFunctionFlags:
     def test_faithfulness_activa_telemetry(self):
         """EVL-LE04: FaithfulnessEvaluator → needs_session=True, telemetry se inicializa"""
         ev = LoomEvals("agent")
-        with patch("loom.loom_evals.StrandsEvalsTelemetry") as mock_tel:
+        with patch("loom_evals.runner.StrandsEvalsTelemetry") as mock_tel:
             mock_tel.return_value.setup_in_memory_exporter.return_value = mock_tel.return_value
             mock_tel.return_value.in_memory_exporter = MagicMock()
             ev._build_task_function([_faithfulness_ev()])
@@ -133,7 +133,7 @@ class TestBuildTaskFunctionFlags:
     def test_interactions_activa_telemetry(self):
         """EVL-LE05: InteractionsEvaluator → needs_session=True, telemetry se inicializa"""
         ev = LoomEvals("agent")
-        with patch("loom.loom_evals.StrandsEvalsTelemetry") as mock_tel:
+        with patch("loom_evals.runner.StrandsEvalsTelemetry") as mock_tel:
             mock_tel.return_value.setup_in_memory_exporter.return_value = mock_tel.return_value
             mock_tel.return_value.in_memory_exporter = MagicMock()
             ev._build_task_function([_interactions_ev()])
@@ -142,14 +142,14 @@ class TestBuildTaskFunctionFlags:
     def test_trajectory_no_activa_telemetry(self):
         """EVL-LE06: TrajectoryEvaluator → needs_session=False, telemetry no se inicializa"""
         ev = LoomEvals("agent")
-        with patch("loom.loom_evals.StrandsEvalsTelemetry") as mock_tel:
+        with patch("loom_evals.runner.StrandsEvalsTelemetry") as mock_tel:
             ev._build_task_function([_trajectory_ev()])
             mock_tel.assert_not_called()
 
     def test_mix_session_y_trajectory_activa_telemetry(self):
         """EVL-LE07: helpfulness + trajectory → needs_session=True, telemetry se inicializa"""
         ev = LoomEvals("agent")
-        with patch("loom.loom_evals.StrandsEvalsTelemetry") as mock_tel:
+        with patch("loom_evals.runner.StrandsEvalsTelemetry") as mock_tel:
             mock_tel.return_value.setup_in_memory_exporter.return_value = mock_tel.return_value
             mock_tel.return_value.in_memory_exporter = MagicMock()
             ev._build_task_function([_helpfulness_ev(), _trajectory_ev()])
@@ -158,7 +158,7 @@ class TestBuildTaskFunctionFlags:
     def test_retorna_callable(self):
         """EVL-LE08: _build_task_function siempre retorna un callable"""
         ev = LoomEvals("agent")
-        with patch("loom.loom_evals.StrandsEvalsTelemetry"):
+        with patch("loom_evals.runner.StrandsEvalsTelemetry"):
             result = ev._build_task_function([_output_ev()])
             assert callable(result)
 
@@ -171,7 +171,7 @@ class TestBuildTaskFunctionFlags:
 class TestTaskFunction:
     def test_task_retorna_task_output_con_answer(self):
         """EVL-LE09: task con OutputEvaluator → TaskOutput con output=response.answer"""
-        with patch("loom.loom_evals.run_dev", return_value=_mock_run("Paris")):
+        with patch("loom_evals.runner.run_dev", return_value=_mock_run("Paris")):
             ev = LoomEvals("my_agent")
             task = ev._build_task_function([_output_ev()])
             result = task(_make_case())
@@ -182,8 +182,8 @@ class TestTaskFunction:
         """EVL-LE10: task crea la session con session_id 'eval-{case.session_id}'"""
         captured = []
         with patch(
-            "loom.loom_evals.run_dev",
-            side_effect=lambda *a, **k: (captured.append((a, k)) or _mock_run()),
+            "loom_evals.runner.run_dev",
+            side_effect=lambda *a, **k: captured.append((a, k)) or _mock_run(),
         ):
             ev = LoomEvals("my_agent")
             task = ev._build_task_function([_output_ev()])
@@ -198,8 +198,8 @@ class TestTaskFunction:
         """EVL-LE11: la session se crea con user_id='eval-runner'"""
         captured = []
         with patch(
-            "loom.loom_evals.run_dev",
-            side_effect=lambda *a, **k: (captured.append((a, k)) or _mock_run()),
+            "loom_evals.runner.run_dev",
+            side_effect=lambda *a, **k: captured.append((a, k)) or _mock_run(),
         ):
             ev = LoomEvals("my_agent")
             task = ev._build_task_function([_output_ev()])
@@ -217,9 +217,9 @@ class TestTaskFunction:
         mock_telemetry.in_memory_exporter = mock_exporter
 
         with (
-            patch("loom.loom_evals.run_dev", return_value=_mock_run()),
-            patch("loom.loom_evals.StrandsEvalsTelemetry", return_value=mock_telemetry),
-            patch("loom.loom_evals.StrandsInMemorySessionMapper") as mock_mapper_cls,
+            patch("loom_evals.runner.run_dev", return_value=_mock_run()),
+            patch("loom_evals.runner.StrandsEvalsTelemetry", return_value=mock_telemetry),
+            patch("loom_evals.runner.StrandsInMemorySessionMapper") as mock_mapper_cls,
         ):
             mock_mapper_cls.return_value.map_to_session.return_value = MagicMock()
             ev = LoomEvals("my_agent")
@@ -238,9 +238,9 @@ class TestTaskFunction:
         mock_telemetry.in_memory_exporter = mock_exporter
 
         with (
-            patch("loom.loom_evals.run_dev", return_value=_mock_run()),
-            patch("loom.loom_evals.StrandsEvalsTelemetry", return_value=mock_telemetry),
-            patch("loom.loom_evals.StrandsInMemorySessionMapper") as mock_mapper_cls,
+            patch("loom_evals.runner.run_dev", return_value=_mock_run()),
+            patch("loom_evals.runner.StrandsEvalsTelemetry", return_value=mock_telemetry),
+            patch("loom_evals.runner.StrandsInMemorySessionMapper") as mock_mapper_cls,
         ):
             mock_mapper_cls.return_value.map_to_session.return_value = fake_session
             ev = LoomEvals("my_agent")
@@ -254,8 +254,8 @@ class TestTaskFunction:
         fake_tools = ["tool_a", "tool_b"]
 
         with (
-            patch("loom.loom_evals.run_dev", return_value=_mock_run()),
-            patch("loom.loom_evals.tools_use_extractor") as mock_extractor,
+            patch("loom_evals.runner.run_dev", return_value=_mock_run()),
+            patch("loom_evals.runner.tools_use_extractor") as mock_extractor,
         ):
             mock_extractor.extract_agent_tools_used_from_messages.return_value = fake_tools
             mock_extractor.extract_tools_description.return_value = {}
@@ -281,7 +281,7 @@ class TestLoomEvalsRun:
         mock_experiment.run_evaluations.return_value = []
 
         with (
-            patch("loom.loom_evals.get_experiment", return_value=mock_experiment) as mock_get,
+            patch("loom_evals.runner.get_experiment", return_value=mock_experiment) as mock_get,
             patch.object(LoomEvals, "_save_reports"),
         ):
             LoomEvals("my_agent").run()
@@ -295,7 +295,7 @@ class TestLoomEvalsRun:
         mock_experiment.run_evaluations.return_value = fake_reports
 
         with (
-            patch("loom.loom_evals.get_experiment", return_value=mock_experiment),
+            patch("loom_evals.runner.get_experiment", return_value=mock_experiment),
             patch.object(LoomEvals, "_save_reports"),
         ):
             result = LoomEvals("my_agent").run()
@@ -310,7 +310,7 @@ class TestLoomEvalsRun:
         mock_experiment.run_evaluations.return_value = fake_reports
 
         with (
-            patch("loom.loom_evals.get_experiment", return_value=mock_experiment),
+            patch("loom_evals.runner.get_experiment", return_value=mock_experiment),
             patch.object(LoomEvals, "_save_reports") as mock_save,
         ):
             LoomEvals("my_agent").run()
@@ -344,7 +344,7 @@ class TestSaveReports:
     def test_crea_directorio_de_resultados(self, tmp_path):
         """EVL-LE18: _save_reports crea eval_results_dir si no existe"""
         mock_p = self._make_mock_paths(tmp_path)
-        with patch("loom.loom_evals.build_workspace_paths", return_value=mock_p):
+        with patch("loom_evals.runner.build_workspace_paths", return_value=mock_p):
             LoomEvals("my_agent")._save_reports([self._make_report()])
         assert (tmp_path / "results").exists()
 
@@ -354,7 +354,7 @@ class TestSaveReports:
         r1 = self._make_report("output")
         r2 = self._make_report("trajectory")
 
-        with patch("loom.loom_evals.build_workspace_paths", return_value=mock_p):
+        with patch("loom_evals.runner.build_workspace_paths", return_value=mock_p):
             LoomEvals("my_agent")._save_reports([r1, r2])
 
         expected_dir = tmp_path / "results"
@@ -366,7 +366,7 @@ class TestSaveReports:
         mock_p = self._make_mock_paths(tmp_path)
         report = self._make_report("output")
 
-        with patch("loom.loom_evals.build_workspace_paths", return_value=mock_p):
+        with patch("loom_evals.runner.build_workspace_paths", return_value=mock_p):
             LoomEvals("my_agent")._save_reports([report])
 
         jsonl = (tmp_path / "results" / "results.jsonl").read_text()
@@ -381,7 +381,7 @@ class TestSaveReports:
         mock_p = self._make_mock_paths(tmp_path)
         reports = [self._make_report("output"), self._make_report("trajectory")]
 
-        with patch("loom.loom_evals.build_workspace_paths", return_value=mock_p):
+        with patch("loom_evals.runner.build_workspace_paths", return_value=mock_p):
             LoomEvals("my_agent")._save_reports(reports)
 
         lines = (tmp_path / "results" / "results.jsonl").read_text().strip().splitlines()
@@ -393,7 +393,7 @@ class TestSaveReports:
         r = self._make_report()
         r.evaluator_name = None
 
-        with patch("loom.loom_evals.build_workspace_paths", return_value=mock_p):
+        with patch("loom_evals.runner.build_workspace_paths", return_value=mock_p):
             LoomEvals("my_agent")._save_reports([r])
 
         r.to_file.assert_called_once_with(str(tmp_path / "results" / "unknown.json"))
@@ -413,7 +413,7 @@ class TestHistory:
     def test_retorna_lista_vacia_si_jsonl_no_existe(self, tmp_path):
         """EVL-LE22: results.jsonl inexistente → []"""
         mock_p = self._make_mock_paths(tmp_path / "no_existe")
-        with patch("loom.loom_evals.build_workspace_paths", return_value=mock_p):
+        with patch("loom_evals.runner.build_workspace_paths", return_value=mock_p):
             result = LoomEvals("my_agent").history()
         assert result == []
 
@@ -440,7 +440,7 @@ class TestHistory:
         (results_dir / "results.jsonl").write_text("\n".join(lines))
 
         mock_p = self._make_mock_paths(results_dir)
-        with patch("loom.loom_evals.build_workspace_paths", return_value=mock_p):
+        with patch("loom_evals.runner.build_workspace_paths", return_value=mock_p):
             result = LoomEvals("my_agent").history()
 
         assert len(result) == 2
@@ -457,7 +457,7 @@ class TestHistory:
         (results_dir / "results.jsonl").write_text(content)
 
         mock_p = self._make_mock_paths(results_dir)
-        with patch("loom.loom_evals.build_workspace_paths", return_value=mock_p):
+        with patch("loom_evals.runner.build_workspace_paths", return_value=mock_p):
             result = LoomEvals("my_agent").history()
 
         assert len(result) == 1

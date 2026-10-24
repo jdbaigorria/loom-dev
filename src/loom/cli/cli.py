@@ -46,14 +46,5 @@ app.add_typer(workflow_app, name="workflow")
 # mounted, as a command that reports the error — never silently dropped.
 mount_cli_plugins(app)
 
-# `loom evals` still ships inside this package until it moves to loom-declarative-evals.
-# Register it only when that stack is importable, so a `[cli]`-only install keeps working.
-try:
-    from .commands.evals import app as evals_app
-except ImportError:
-    pass
-else:
-    app.add_typer(evals_app, name="evals")
-
 if __name__ == "__main__":
     app()

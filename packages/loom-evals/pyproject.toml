@@ -8,6 +8,9 @@ dependencies = [
     "strands-agents-evals>=0.1.13,<0.2",
 ]
 
+[project.entry-points."loom.cli"]
+evals = "loom_evals.cli:app"
+
 [tool.uv.sources]
 loom-declarative = { workspace = true }
 

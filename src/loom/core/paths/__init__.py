@@ -15,7 +15,6 @@ working::
 
 from .assets import (
     AGENT_TEMPLATES,
-    EVALS_TEMPLATES,
     INIT_TEMPLATES,
     INTERNAL_PACKAGE_ROOT,
     TEMPLATES_DIR,
@@ -32,7 +31,6 @@ from .workspace import (
 
 __all__ = [
     "AGENT_TEMPLATES",
-    "EVALS_TEMPLATES",
     "INIT_TEMPLATES",
     "INTERNAL_PACKAGE_ROOT",
     "TEMPLATES_DIR",

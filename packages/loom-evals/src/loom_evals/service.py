@@ -19,14 +19,12 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
-from loom.core.exceptions import (
-    AgentNotFoundError,
-    EvalsAlreadyExistsError,
-    EvalsNotFoundError,
-    EvalsRunError,
-)
-from loom.core.paths import EVALS_TEMPLATES, build_workspace_paths
-from loom.loom_evals import LoomEvals
+from loom.core.exceptions import AgentNotFoundError
+from loom.core.paths import build_workspace_paths
+from loom_evals.exceptions import EvalsAlreadyExistsError, EvalsNotFoundError, EvalsRunError
+from loom_evals.runner import LoomEvals
+
+_TEMPLATES = Path(__file__).resolve().parent / "templates"
 
 logger = logging.getLogger(__name__)
 
@@ -52,9 +50,7 @@ def new_evals(name: str) -> Path:
     if eval_file.exists():
         raise EvalsAlreadyExistsError(name)
 
-    env = Environment(
-        loader=FileSystemLoader(EVALS_TEMPLATES), trim_blocks=True, lstrip_blocks=True
-    )
+    env = Environment(loader=FileSystemLoader(_TEMPLATES), trim_blocks=True, lstrip_blocks=True)
     content = env.get_template("evals.yml.j2").render(name=name)
 
     eval_file.parent.mkdir(parents=True, exist_ok=True)

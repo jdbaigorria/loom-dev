@@ -22,9 +22,10 @@ cli = [
     "jinja2>=3.1.6",
     "rich>=14.3.3",
 ]
-# Evaluation tooling (`loom evals`, LoomEvals).
+# Evaluation tooling (`loom evals`) ships in the loom-declarative-evals package.
+# This extra is a compatibility alias.
 evals = [
-    "strands-agents-evals>=0.1.13,<0.2",
+    "loom-declarative-evals>=1.0.0rc1,<2",
 ]
 # AWS credential/Bedrock checks used by `loom doctor --aws`. Declared explicitly
 # even though strands-agents brings boto3 transitively, so it is not silently
@@ -65,12 +66,12 @@ docs = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "examples"]
+testpaths = ["tests", "examples", "packages/loom-evals/tests"]
 pythonpath = ["src"]
 addopts = "--import-mode=importlib"
 
 [tool.coverage.run]
-source = ["src/loom"]
+source = ["src/loom", "packages/loom-evals/src/loom_evals"]
 omit = ["tests/*", "examples/*"]
 
 [tool.coverage.report]
@@ -80,7 +81,7 @@ fail_under = 75
 
 [tool.mypy]
 python_version = "3.11"
-mypy_path = "src"
+mypy_path = "src:packages/loom-evals/src"
 strict = false
 ignore_missing_imports = true
 warn_unused_ignores = true
@@ -98,27 +99,28 @@ select = ["E", "F", "I", "N", "W", "UP", "TID"]
 ignore = ["E501", "TID252"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["loom"]
+known-first-party = ["loom", "loom_evals"]
 
 # Anti-corruption layer: Strands may only be imported from loom.adapters.strands.
 # This keeps every vendor import path in one place so an upstream breaking
 # release is a one-file fix instead of a codebase-wide hunt.
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
 "strands".msg = "Import Strands only via loom.adapters.strands (the anti-corruption layer)."
-"strands_evals".msg = "Import strands_evals only via loom.adapters.strands.evals (the anti-corruption layer)."
+"strands_evals".msg = "Import strands_evals only via loom_evals.adapters.strands_evals (the anti-corruption layer)."
 
 [tool.ruff.lint.per-file-ignores]
 # The ACL is the one place allowed to touch the vendor SDKs directly.
 "src/loom/adapters/strands/*" = ["TID251"]
+"packages/loom-evals/src/loom_evals/adapters/*" = ["TID251"]
 # Examples are end-user code: authoring tools/hooks with `from strands import tool`
 # is the normal Strands authoring API, not internal Loom coupling.
 "examples/*" = ["TID251"]
 
 [tool.poe.tasks]
-format = "ruff format src tests examples"
-lint   = "ruff check src tests examples --fix"
-type   = "mypy src/loom"
-test   = "pytest tests"
+format = "ruff format src tests examples packages"
+lint   = "ruff check src tests examples packages --fix"
+type   = "mypy src/loom packages/loom-evals/src/loom_evals"
+test   = "pytest"
 docs   = "mkdocs serve"
 docs-build = "mkdocs build"
 

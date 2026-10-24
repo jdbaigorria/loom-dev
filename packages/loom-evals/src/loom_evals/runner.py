@@ -34,7 +34,10 @@ import json
 import logging
 from datetime import UTC, datetime
 
-from loom.adapters.strands.evals import (
+from loom.core.paths import build_workspace_paths
+from loom.dev import run_dev
+from loom.schemas.context import LoomSession
+from loom_evals.adapters.strands_evals import (
     Case,
     EvaluationReport,
     FaithfulnessEvaluator,
@@ -49,10 +52,7 @@ from loom.adapters.strands.evals import (
     TrajectoryEvaluator,
     tools_use_extractor,
 )
-from loom.core.loaders.evaluator import get_experiment
-from loom.core.paths import build_workspace_paths
-from loom.dev import run_dev
-from loom.schemas.context import LoomSession
+from loom_evals.loader import get_experiment
 
 logger = logging.getLogger(__name__)
 

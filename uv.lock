@@ -964,9 +964,9 @@ all = [
     { name = "boto3" },
     { name = "inquirerpy" },
     { name = "jinja2" },
+    { name = "loom-declarative-evals" },
     { name = "requests" },
     { name = "rich" },
-    { name = "strands-agents-evals" },
     { name = "typer" },
 ]
 aws = [
@@ -979,7 +979,7 @@ cli = [
     { name = "typer" },
 ]
 evals = [
-    { name = "strands-agents-evals" },
+    { name = "loom-declarative-evals" },
 ]
 tools = [
     { name = "requests" },
@@ -1006,11 +1006,11 @@ requires-dist = [
     { name = "inquirerpy", marker = "extra == 'cli'", specifier = ">=0.3.4" },
     { name = "jinja2", marker = "extra == 'cli'", specifier = ">=3.1.6" },
     { name = "loom-declarative", extras = ["cli", "evals", "aws", "tools"], marker = "extra == 'all'" },
+    { name = "loom-declarative-evals", marker = "extra == 'evals'", editable = "packages/loom-evals" },
     { name = "omegaconf", specifier = ">=2.3.0" },
     { name = "requests", marker = "extra == 'tools'", specifier = ">=2.28.0" },
     { name = "rich", marker = "extra == 'cli'", specifier = ">=14.3.3" },
     { name = "strands-agents", specifier = ">=1.62.0,<2.0" },
-    { name = "strands-agents-evals", marker = "extra == 'evals'", specifier = ">=0.1.13,<0.2" },
     { name = "typer", marker = "extra == 'cli'", specifier = ">=0.24.1" },
 ]
 provides-extras = ["cli", "evals", "aws", "tools", "all"]

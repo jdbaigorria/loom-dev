@@ -23,11 +23,10 @@ Example:
 
 import logging
 
-from loom.adapters.strands.evals import Case, Evaluator, Experiment
-from loom.schemas.config.evals import CaseConfig, EvaluatorConfig, ExperimentConfig
+from loom.core.paths import build_workspace_paths
 from loom.utils.loaders import load_config
-
-from ..paths import build_workspace_paths
+from loom_evals.adapters.strands_evals import Case, Evaluator, Experiment
+from loom_evals.schemas import CaseConfig, EvaluatorConfig, ExperimentConfig
 
 logger = logging.getLogger(__name__)
 
@@ -153,7 +152,7 @@ def _to_evaluator(evaluators_cfg: list[EvaluatorConfig]) -> list[Evaluator]:
         TypeError: If evaluator instantiation fails (e.g., missing required params).
         KeyError: If evaluator type is not in the evaluator mapping.
     """
-    from loom.adapters.strands.evals import (
+    from loom_evals.adapters.strands_evals import (
         FaithfulnessEvaluator,
         GoalSuccessRateEvaluator,
         HelpfulnessEvaluator,
