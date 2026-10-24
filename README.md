@@ -1,6 +1,6 @@
 # LOOM
 
-**Declarative AI agent framework** — scaffold, configure, and run agents from YAML and a single CLI, built on [Strands Agents](https://github.com/strands-agents/sdk-python).
+**Declarative AI agent framework** — scaffold, configure, and run agents from YAML and a single CLI, built on [Strands Agents](https://github.com/strands-agents/harness-sdk).
 
 > **Pre-release (v1.0.0rc1)** — APIs, CLI flags, and on-disk layouts may change without a major version bump. Feedback and issue reports are welcome. Not recommended for production without your own hardening and review.
 
@@ -8,7 +8,7 @@
 
 ## Why LOOM?
 
-Loom is a **build** library: it turns a declarative YAML definition into a native [Strands](https://github.com/strands-agents/sdk-python) `Agent` / `Graph` / `Swarm` and hands it back. Execution belongs to the caller — Loom does not wrap or manage runtime.
+Loom is a **build** library: it turns a declarative YAML definition into a native [Strands](https://github.com/strands-agents/harness-sdk) `Agent` / `Graph` / `Swarm` and hands it back. Execution belongs to the caller — Loom does not wrap or manage runtime.
 
 - **Fast scaffolding** — `loom init` and `loom agent new` generate a consistent workspace (`loom.toml`, app config, agent folders).
 - **Declarative agents** — Model, prompts, tools, hooks, sessions, retries, and structured output are driven by validated YAML (fail fast at load time via `build_agent` and `loom agent validate`).

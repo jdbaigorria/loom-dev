@@ -47,7 +47,7 @@ src/loom/
 ├── testing.py                  # Test helpers (MockModel, mock_llm)
 ├── adapters/strands/           # Anti-corruption layer — only place Strands is imported
 │   ├── _resolve.py             # Version-tolerant symbol resolution
-│   └── capabilities.py         # Feature detection (MCP, tool_executor, Graph…)
+│   └── capabilities.py         # Feature detection (MCP, bidi, Graph execution limits)
 ├── cli/                        # Typer CLI; plugins mount via the loom.cli entry-point group
 ├── config/                     # Project-level config loading
 │   ├── defaults.py             # Scalar defaults (region, session path)
@@ -68,7 +68,7 @@ src/loom/
     └── context.py                # LoomSession
 ```
 
-**Anti-corruption layer:** All `strands` / `strands_evals` imports must go through `loom.adapters.strands`. Enforced by ruff rule `TID251`. Violating it fails `loom check`.
+**Anti-corruption layer:** All `strands` / `strands_evals` imports must go through `loom.adapters.strands` or `loom_evals.adapters.strands_evals`. Enforced by ruff rule `TID251`. The supported floor is `strands-agents` 1.62: HTTP MCP clients are built with `MCPClient(url=…)`, `BidiAgent` is imported from `strands.bidi`, and `kind: bidi` rejects `tool_executor`. Graph workflows can set `max_node_executions` and `execution_timeout`.
 
 ## Commit messages
 
