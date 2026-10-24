@@ -50,6 +50,7 @@ from .loaders.plugin import get_plugins
 from .loaders.prompt import get_prompt
 from .loaders.retry import get_retry_strategy
 from .loaders.routing import RoutingTraceHook
+from .loaders.sandbox import get_sandbox
 from .loaders.session import get_session_manager
 from .loaders.storage import get_storage
 from .loaders.tool import get_tools
@@ -171,10 +172,15 @@ def build(
         trace = RoutingTraceHook()
         hooks = [*(hooks or []), trace]
 
+    sandbox_cfg = (
+        agent_config.sandbox if agent_config.sandbox is not None else app_config.sandbox
+    )
+    sandbox = get_sandbox(sandbox_cfg) if sandbox_cfg is not None else None
     storage = (
         get_storage(
             app_config.storage,
             metadata_dir=paths.metadata_dir if paths else None,
+            sandbox=sandbox,
             overlay=model_params,
         )
         if app_config.storage
@@ -270,6 +276,7 @@ def build(
         )
         if agent_config.interventions
         else None,
+        "sandbox": sandbox if agent_config.kind != "bidi" else None,
     }
 
     clean_params = {k: v for k, v in {**shared_params, **agent_only}.items() if v is not None}
