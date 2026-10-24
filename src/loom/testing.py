@@ -154,6 +154,15 @@ class MockModel(Model):
         }
 
 
+class FailingModel(MockModel):
+    """Mock model whose ``stream`` always raises. Used to exercise model fallback."""
+
+    async def stream(self, *args: Any, **kwargs: Any) -> AsyncIterable[StreamEvent]:
+        self.call_count += 1
+        raise RuntimeError("primary failed")
+        yield {}  # pragma: no cover
+
+
 @contextmanager
 def mock_llm(*responses: str):
     """Context manager that replaces the LLM with a :class:`MockModel`.

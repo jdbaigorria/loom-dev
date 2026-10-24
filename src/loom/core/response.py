@@ -149,6 +149,13 @@ def run_and_record(
     interrupted = bool(getattr(result, "interrupts", None))
     assistant_msg_idx = len(agent.messages) - 1
 
+    trace = getattr(agent, "_loom_routing_trace", None)
+    attempts = list(getattr(trace, "attempts", None) or [])
+    if attempts:
+        answered = next((item for item in reversed(attempts) if item.get("outcome") == "OK"), None)
+        if answered and answered.get("model_id"):
+            model_id = answered["model_id"]
+
     response = build_response(
         result,
         session,
@@ -156,6 +163,8 @@ def run_and_record(
         user_msg_idx=user_msg_idx,
         assistant_msg_idx=assistant_msg_idx,
     )
+    if attempts:
+        response.metadata.model_attempts = attempts
     save_invocation(response.metadata, name=name, system_prompt_tokens=system_prompt_tokens)
     return response, interrupted
 
@@ -176,6 +185,8 @@ def save_invocation(
             "user_id": metadata.user_id,
             "system_prompt_tokens": system_prompt_tokens,
             "metrics": metadata.raw_metrics or {},
+            "model_id": metadata.model_id,
+            "model_attempts": metadata.model_attempts,
         }
         stats_file = build_workspace_paths().agent_stats_file(name)
         stats_file.parent.mkdir(parents=True, exist_ok=True)

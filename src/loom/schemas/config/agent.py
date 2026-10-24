@@ -40,7 +40,14 @@ class AgentConfig(StrictConfig):
     version: str | None = None
 
     @model_validator(mode="after")
-    def _bidi_rejects_conversation(self):
-        if self.kind == "bidi" and self.conversation is not None:
+    def _bidi_rejects_unsupported(self):
+        if self.kind != "bidi":
+            return self
+        if self.conversation is not None:
             raise ValueError("'conversation' is not supported when kind is 'bidi'.")
+        if not isinstance(self.model, str):
+            from loom.schemas.config.models import CustomModelConfig
+
+            if not isinstance(self.model, CustomModelConfig):
+                raise ValueError("model fallback is not supported when kind is 'bidi'.")
         return self

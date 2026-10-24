@@ -360,7 +360,11 @@ def _model_descriptor(model: object) -> str:
     """Human-readable model for the listing: a profile name or an inline model id."""
     if isinstance(model, str):
         return model  # profile name, e.g. "default"
+    if isinstance(model, list):
+        return "fallback"
     if isinstance(model, dict):
+        if "fallback" in model:
+            return "fallback"
         params = model.get("params") or {}
         return str(params.get("model_id") or model.get("import_path", "inline"))
     return "default"

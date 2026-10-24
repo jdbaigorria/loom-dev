@@ -41,10 +41,11 @@ from .loaders.app import resolve_env
 from .loaders.conversation import get_conversation_manager
 from .loaders.hook import get_hooks
 from .loaders.mcp import get_mcp_clients
-from .loaders.model import get_model
+from .loaders.model import get_model, is_router_model
 from .loaders.output import get_output_class
 from .loaders.prompt import get_prompt
 from .loaders.retry import get_retry_strategy
+from .loaders.routing import RoutingTraceHook
 from .loaders.session import get_session_manager
 from .loaders.tool import get_tools
 from .loaders.tool_executor import get_tool_executor
@@ -139,7 +140,9 @@ def build(
     logger.debug(
         "Building '%s': model=%s, tools=%d/%d, prompt=%s",
         name,
-        agent_config.model if isinstance(agent_config.model, str) else "inline",
+        "fallback"
+        if is_router_model(agent_config.model)
+        else (agent_config.model if isinstance(agent_config.model, str) else "inline"),
         len(selected_tools),
         len(agent_config.tools) if agent_config.tools else 0,
         type(agent_config.system_prompt).__name__ if agent_config.system_prompt else None,
@@ -154,10 +157,20 @@ def build(
     mcp_clients = get_mcp_clients(agent_config.mcp_servers) if agent_config.mcp_servers else []
     all_tools = [*local_tools, *mcp_clients]
 
+    if agent_config.kind == "bidi" and is_router_model(agent_config.model):
+        raise AgentConfigError("model fallback is not supported when kind is 'bidi'.")
+
+    model = get_model(agent_config.model, model_params) if agent_config.model else None
+    hooks = get_hooks(agent_config.hooks, hooks_dir) if agent_config.hooks else None
+    trace = None
+    if sx.ModelRouter is not None and isinstance(model, sx.ModelRouter):
+        trace = RoutingTraceHook()
+        hooks = [*(hooks or []), trace]
+
     # Params shared by both kinds. Bidi reuses every loader except the model
     # (a BidiModel) and omits conversation/structured-output/retry.
     shared_params = {
-        "model": get_model(agent_config.model, model_params) if agent_config.model else None,
+        "model": model,
         "system_prompt": get_prompt(agent_config.system_prompt, base_path=config_dir)
         if agent_config.system_prompt
         else None,
@@ -168,7 +181,7 @@ def build(
         "session_manager": get_session_manager(app_config.session, session.session_id)
         if app_config.session
         else None,
-        "hooks": get_hooks(agent_config.hooks, hooks_dir) if agent_config.hooks else None,
+        "hooks": hooks,
     }
 
     if agent_config.kind == "bidi":
@@ -196,6 +209,8 @@ def build(
         callback_handler=None,  # forced None — clean_params filters it otherwise
         **clean_params,
     )
+    if trace is not None:
+        agent._loom_routing_trace = trace
 
     logger.info("Agent '%s' built successfully", name)
     return agent

@@ -22,7 +22,7 @@ from loom.adapters.strands import Agent
 from loom.core.builder import build_agent
 from loom.core.exceptions import LoomError
 from loom.core.loaders.app import resolve_env
-from loom.core.loaders.model import resolve_model_config
+from loom.core.loaders.model import declared_model_id
 from loom.core.response import estimate_tokens, run_and_record
 from loom.core.workflow_builder import build_workflow
 from loom.schemas.context import LoomSession
@@ -75,7 +75,7 @@ def build_dev_agent(name: str, session: LoomSession, *, env: str | None = None) 
     active_env = env or resolve_env()
     src = FileConfigSource(env=active_env)
     agent_config = src.get_agent_config(name)
-    model_id = resolve_model_config(agent_config.model).model_id
+    model_id = declared_model_id(agent_config.model)
     agent = build_agent(name, session, active_env, source=src)
     return DevAgent(
         agent=agent,
