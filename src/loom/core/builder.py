@@ -29,7 +29,7 @@ from typing import Any
 
 from loom.adapters import strands as sx
 from loom.adapters.config import FileConfigSource
-from loom.adapters.strands import Agent
+from loom.adapters.strands import Agent, capabilities
 from loom.core.exceptions import AgentConfigError, ToolSelectionError
 from loom.ports import ConfigSource
 from loom.schemas.config.agent import AgentConfig
@@ -196,6 +196,19 @@ def build(
         else app_config.conversation
     )
     context_manager = get_context(agent_config.context) if agent_config.context is not None else None
+    aux = None
+    if agent_config.aux_model is not None:
+        if is_router_model(agent_config.aux_model):
+            raise AgentConfigError(
+                "aux_model cannot be a fallback or a list.",
+                tip="Point aux_model at a single profile or an inline model.",
+            )
+        if not capabilities.agent_accepts("aux_model"):
+            raise AgentConfigError(
+                "The installed Strands version does not accept aux_model.",
+                tip="Requiere strands-agents >= 1.58",
+            )
+        aux = get_model(agent_config.aux_model, model_params)
     stateful = getattr(model, "stateful", False) is True
     if context_manager is not None and not conversation_is_none(conversation):
         raise AgentConfigError(
@@ -220,6 +233,7 @@ def build(
         if agent_config.plugins
         else None,
         "context_manager": context_manager,
+        "aux_model": aux,
     }
 
     clean_params = {k: v for k, v in {**shared_params, **agent_only}.items() if v is not None}
