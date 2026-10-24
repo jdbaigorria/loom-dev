@@ -19,7 +19,13 @@ edges:
   - { from: triage, to: billing }
   - { from: triage, to: tech }
 entry_point: triage
+max_node_executions: 50   # optional; stops a cyclic graph
+execution_timeout: 120    # optional, seconds for the whole graph
+node_timeout: 30          # optional, seconds for one node
+reset_on_revisit: false   # optional; reset a node's state when it runs again
 ```
+
+Leave `max_node_executions` and `execution_timeout` unset and Strands warns that graph execution is unbounded. Set either one to silence that warning. `node_timeout` and `reset_on_revisit` are independent of it.
 
 ### Conditional edges
 

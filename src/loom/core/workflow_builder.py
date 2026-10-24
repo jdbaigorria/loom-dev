@@ -104,6 +104,14 @@ def _build_graph(
 
     if config.entry_point is not None:
         builder.set_entry_point(config.entry_point)
+    if config.max_node_executions is not None:
+        builder.set_max_node_executions(config.max_node_executions)
+    if config.execution_timeout is not None:
+        builder.set_execution_timeout(config.execution_timeout)
+    if config.node_timeout is not None:
+        builder.set_node_timeout(config.node_timeout)
+    if config.reset_on_revisit is not None:
+        builder.reset_on_revisit(config.reset_on_revisit)
 
     logger.debug("Graph built: %d node(s), %d edge(s)", len(config.nodes), len(config.edges))
     return builder.build(), built_agents

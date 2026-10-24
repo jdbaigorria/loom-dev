@@ -53,6 +53,10 @@ class GraphWorkflowConfig(_WorkflowBase):
     nodes: dict[str, GraphNodeConfig] = Field(min_length=1)
     edges: list[GraphEdgeConfig] = Field(default_factory=list)
     entry_point: str | None = None
+    max_node_executions: int | None = Field(default=None, ge=1)
+    execution_timeout: float | None = Field(default=None, gt=0)
+    node_timeout: float | None = Field(default=None, gt=0)
+    reset_on_revisit: bool | None = None
 
     @model_validator(mode="after")
     def _check_references(self) -> GraphWorkflowConfig:
