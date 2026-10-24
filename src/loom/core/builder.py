@@ -54,9 +54,7 @@ from .telemetry import setup_telemetry
 logger = logging.getLogger(__name__)
 
 
-def _select_tools(
-    tool_defs: list[ToolConfig] | None, names: list[str] | None
-) -> list[ToolConfig]:
+def _select_tools(tool_defs: list[ToolConfig] | None, names: list[str] | None) -> list[ToolConfig]:
     """Return the declared tools, optionally narrowed to ``names``.
 
     ``names is None`` → the full declared catalog. Otherwise every requested name
@@ -150,7 +148,9 @@ def build(
     # Tools come from local/shared Python files and/or MCP servers. MCP clients are
     # ToolProviders handed straight to the agent, which owns their open/close
     # lifecycle (started on build, stopped on ``agent.cleanup()``).
-    local_tools = get_tools(selected_tools, agent_dir, shared_dir, model_params) if selected_tools else []
+    local_tools = (
+        get_tools(selected_tools, agent_dir, shared_dir, model_params) if selected_tools else []
+    )
     mcp_clients = get_mcp_clients(agent_config.mcp_servers) if agent_config.mcp_servers else []
     all_tools = [*local_tools, *mcp_clients]
 
@@ -174,14 +174,17 @@ def build(
     if agent_config.kind == "bidi":
         return _build_bidi(agent_config, shared_params)
 
+    conversation = (
+        agent_config.conversation
+        if agent_config.conversation is not None
+        else app_config.conversation
+    )
     agent_only = {
         "structured_output_model": get_output_class(agent_config.output, agent_dir)
         if agent_config.output
         else None,
         "retry_strategy": get_retry_strategy(agent_config.retry) if agent_config.retry else None,
-        "conversation_manager": get_conversation_manager(app_config.conversation)
-        if app_config.conversation
-        else None,
+        "conversation_manager": get_conversation_manager(conversation) if conversation else None,
     }
 
     clean_params = {k: v for k, v in {**shared_params, **agent_only}.items() if v is not None}
@@ -207,9 +210,14 @@ def _build_bidi(agent_config: AgentConfig, shared_params: dict):
     """
     if sx.BidiAgent is None:
         raise AgentConfigError(
-            "The installed Strands version does not provide the experimental BidiAgent.",
-            tip="Upgrade strands-agents to a version that ships "
-            "strands.experimental.bidi, or set kind: agent.",
+            "The installed Strands version does not provide BidiAgent.",
+            tip="Upgrade strands-agents to a version that ships strands.bidi, or set kind: agent.",
+        )
+
+    if "tool_executor" in shared_params and shared_params["tool_executor"] is not None:
+        raise AgentConfigError(
+            "'tool_executor' is not supported for bidi agents by the installed Strands version.",
+            tip="Remove 'tool_executor' from the agent YAML (Strands >= 1.57.2 dropped it from BidiAgent).",
         )
 
     clean_params = {k: v for k, v in shared_params.items() if v is not None}
@@ -276,5 +284,10 @@ def build_agent(
     paths = src.workspace if isinstance(src, FileConfigSource) else None
 
     return build(
-        agent_config, session, app_config=app_config, tools=tools, paths=paths, model_params=model_params
+        agent_config,
+        session,
+        app_config=app_config,
+        tools=tools,
+        paths=paths,
+        model_params=model_params,
     )

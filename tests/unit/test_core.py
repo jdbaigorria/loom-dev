@@ -302,6 +302,54 @@ class TestBuilder:
         assert "tools" not in kwargs
         assert "structured_output_model" not in kwargs
 
+    def test_conversation_del_agente_gana_a_la_de_app(self, mocker, monkeypatch, tmp_path):
+        monkeypatch.setenv("LOOM_ROOT", str(tmp_path))
+        from loom.schemas.config.agent import AgentConfig
+        from loom.schemas.config.app import AppConfig
+
+        source = self._fake_source(
+            mocker,
+            AgentConfig(name="a", conversation="summarize"),
+            AppConfig(conversation="sliding"),
+        )
+        mocker.patch("loom.core.builder.resolve_env", return_value="dev")
+        mocker.patch("loom.core.builder.get_model", return_value=mocker.Mock())
+        mocker.patch("loom.core.builder.get_prompt", return_value="prompt")
+        mocker.patch("loom.core.builder.get_retry_strategy", return_value=mocker.Mock())
+        mock_cm = mocker.patch(
+            "loom.core.builder.get_conversation_manager", return_value=mocker.Mock()
+        )
+        mocker.patch("loom.core.builder.Agent")
+
+        from loom.core.builder import build_agent
+
+        build_agent("a", LoomSession(user_id="u1", session_id="s1"), source=source)
+        mock_cm.assert_called_once_with("summarize")
+
+    def test_sin_conversation_de_agente_usa_la_de_app(self, mocker, monkeypatch, tmp_path):
+        monkeypatch.setenv("LOOM_ROOT", str(tmp_path))
+        from loom.schemas.config.agent import AgentConfig
+        from loom.schemas.config.app import AppConfig
+
+        source = self._fake_source(
+            mocker,
+            AgentConfig(name="a"),
+            AppConfig(conversation="sliding"),
+        )
+        mocker.patch("loom.core.builder.resolve_env", return_value="dev")
+        mocker.patch("loom.core.builder.get_model", return_value=mocker.Mock())
+        mocker.patch("loom.core.builder.get_prompt", return_value="prompt")
+        mocker.patch("loom.core.builder.get_retry_strategy", return_value=mocker.Mock())
+        mock_cm = mocker.patch(
+            "loom.core.builder.get_conversation_manager", return_value=mocker.Mock()
+        )
+        mocker.patch("loom.core.builder.Agent")
+
+        from loom.core.builder import build_agent
+
+        build_agent("a", LoomSession(user_id="u1", session_id="s1"), source=source)
+        mock_cm.assert_called_once_with("sliding")
+
     def test_build_agent_retorna_instancia_creada_por_agent(self, builder_env):
         """COR-D04: build_agent retorna el objeto devuelto por Agent()"""
         from loom.core.builder import build_agent
@@ -333,7 +381,11 @@ class TestSelectTools:
         from loom.core.builder import _select_tools
         from loom.schemas.config.tool import ToolConfig
 
-        defs = [ToolConfig.model_validate("a"), ToolConfig.model_validate("b"), ToolConfig.model_validate("c")]
+        defs = [
+            ToolConfig.model_validate("a"),
+            ToolConfig.model_validate("b"),
+            ToolConfig.model_validate("c"),
+        ]
         result = _select_tools(defs, ["c", "a"])
         assert [t.name for t in result] == ["a", "c"]
 
@@ -404,7 +456,9 @@ class TestBuildEngine:
         from loom.schemas.config.app import AppConfig
         from loom.schemas.config.tool import ToolConfig
 
-        cfg = AgentConfig(name="eng", tools=[ToolConfig.model_validate("a"), ToolConfig.model_validate("b")])
+        cfg = AgentConfig(
+            name="eng", tools=[ToolConfig.model_validate("a"), ToolConfig.model_validate("b")]
+        )
         build(
             cfg,
             LoomSession(user_id="u", session_id="s"),
@@ -516,7 +570,9 @@ class TestBuilderWithDefaults:
         ws = WorkspacePaths(project_root=tmp_path, workspace_name="warp")
         src = FileConfigSource(workspace=ws, env="dev")
         mocker.patch.object(
-            src, "get_app_config", return_value=AppConfig(session=None, conversation=None, defaults=None)
+            src,
+            "get_app_config",
+            return_value=AppConfig(session=None, conversation=None, defaults=None),
         )
         # Prompt ya resuelto → la hidratación es no-op y la identidad se preserva.
         agent_cfg = AgentConfig(
@@ -651,7 +707,9 @@ class TestFileSourceToolHydration:
 
         src = FileConfigSource(workspace=ws, env="dev")
         mocker.patch.object(
-            src, "get_app_config", return_value=AppConfig(session=None, conversation=None, defaults=None)
+            src,
+            "get_app_config",
+            return_value=AppConfig(session=None, conversation=None, defaults=None),
         )
         return src
 

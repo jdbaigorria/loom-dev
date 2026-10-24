@@ -2,17 +2,19 @@
 
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import model_validator
 
+from .conversations import ConversationConfig
 from .hook import HookConfig
 from .mcp import MCPServerConfig
 from .models import ModelConfig
 from .prompt import PromptConfig
 from .retry import RetryStrategyConfig
+from .strict import StrictConfig
 from .tool import ToolConfig
 
 
-class AgentConfig(BaseModel):
+class AgentConfig(StrictConfig):
     """Complete configuration for a Loom agent as defined in its YAML file."""
 
     name: str
@@ -32,3 +34,13 @@ class AgentConfig(BaseModel):
     # How tools are executed within a single turn. None → Strands default
     # (concurrent). Requires a Strands build with pluggable tool executors.
     tool_executor: Literal["concurrent", "sequential"] | None = None
+    # Profile name or an inline conversation config. None → the app.yml conversation.
+    conversation: str | ConversationConfig | None = None
+    # Written by `loom agent new`. Kept so extra="forbid" does not reject existing agents.
+    version: str | None = None
+
+    @model_validator(mode="after")
+    def _bidi_rejects_conversation(self):
+        if self.kind == "bidi" and self.conversation is not None:
+            raise ValueError("'conversation' is not supported when kind is 'bidi'.")
+        return self

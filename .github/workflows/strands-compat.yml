@@ -4,10 +4,10 @@ name: Strands Compatibility
 # Runs the suite against both edges of the supported Strands range so an upstream
 # break is caught here — and filed as an issue — before it reaches a user.
 #
-#   - latest: newest strands-agents on PyPI (ignores the pyproject ceiling), to
-#     catch the next breaking release early.
-#   - lowest: the minimum declared versions, to catch using an API newer than the
-#     supported floor promises.
+#   - latest: newest strands-agents and strands-agents-evals on PyPI (ignores
+#     the pyproject ceiling), to catch the next breaking release early.
+#   - lowest: the declared floors, strands-agents 1.62.0 and
+#     strands-agents-evals 0.1.13, to catch using an API newer than the floor.
 #
 # A failure opens (or reuses) a `strands-compat` issue. Fix the ACL in
 # src/loom/adapters/strands/, then bump the range in pyproject.toml.
@@ -47,10 +47,10 @@ jobs:
         run: |
           if [ "${{ matrix.mode }}" = "lowest" ]; then
             # Lowest direct-dependency versions allowed by pyproject.
-            uv sync --group dev --resolution lowest-direct
+            uv sync --all-packages --group dev --resolution lowest-direct
           else
             # Pinned env, then force the newest Strands from PyPI (canary).
-            uv sync --group dev
+            uv sync --all-packages --group dev
             uv pip install --upgrade strands-agents strands-agents-evals
           fi
 

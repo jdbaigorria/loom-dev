@@ -35,7 +35,7 @@ from loom.adapters.strands import DecoratedFunctionTool, ToolResult, tool
 logger = logging.getLogger(__name__)
 
 _WRITE_METHODS = ("POST", "PUT", "PATCH")
-_EMPTY_VALUES = (None, "", [], {}, "-", "null", "none", "false")
+_EMPTY_VALUES: tuple[Any, ...] = (None, "", [], {}, "-", "null", "none", "false")
 _JSON_TYPES = ("string", "integer", "number", "boolean", "array", "object")
 _PY_TYPES: dict[str, type] = {
     "string": str,
@@ -87,8 +87,8 @@ def _deep_merge(a: Any, b: Any) -> Any:
         return out
     if isinstance(a, list) and isinstance(b, list):
         merged = [_deep_merge(x, y) for x, y in zip(a, b)]
-        merged.extend(a[len(b):])
-        merged.extend(b[len(a):])
+        merged.extend(a[len(b) :])
+        merged.extend(b[len(a) :])
         return merged
     return b  # scalar / type mismatch: the later fragment wins
 
@@ -118,7 +118,7 @@ def _project(data: Any, select: list[str]) -> Any:
 
 def _build_session(headers: dict[str, str] | None):
     """Create a ``requests.Session`` with JSON content-type and static headers."""
-    import requests  # lazy: only required when this builtin is actually configured
+    import requests  # type: ignore[import-untyped]  # lazy: only when this builtin is configured
 
     session = requests.Session()
     session.headers.update({"Content-Type": "application/json"})
@@ -238,7 +238,9 @@ def _inject_value(template: Any, params: dict[str, Any], omit: frozenset[str] = 
         return _PLACEHOLDER.sub(lambda m: str(params.get(m.group(1), "")), template)
     if isinstance(template, dict):
         return {
-            k: v for k, raw in template.items() if (v := _inject_value(raw, params, omit)) is not _OMIT
+            k: v
+            for k, raw in template.items()
+            if (v := _inject_value(raw, params, omit)) is not _OMIT
         }
     if isinstance(template, list):
         return [v for raw in template if (v := _inject_value(raw, params, omit)) is not _OMIT]
@@ -404,9 +406,7 @@ def _make_domain_apicall(
         merged = {**defaults, **kwargs}
         # Params left at their default that opted into omit_if_default: drop their
         # key from the request entirely instead of sending the default value.
-        omit = frozenset(
-            p for p in omit_if_default if merged.get(p) == expose[p].get("default")
-        )
+        omit = frozenset(p for p in omit_if_default if merged.get(p) == expose[p].get("default"))
         try:
             url = f"{base}{_inject_path(path_tmpl, merged)}"
         except _InjectionError as exc:
@@ -459,7 +459,7 @@ def _make_generic_apicall(
     if not allowed_paths:
         raise ValueError("allowed_paths must list at least one allowed path pattern")
 
-    base = (base_url or os.getenv("BASE_URL", "")).rstrip("/")
+    base = (base_url or os.getenv("BASE_URL") or "").rstrip("/")
     patterns = list(allowed_paths)
     session = _build_session(headers)
 

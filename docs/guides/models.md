@@ -74,7 +74,7 @@ model:
     model:
       provider: anthropic
       params:
-        model_id: claude-3-5-sonnet-20241022
+        model_id: claude-sonnet-5-5
         client_args:
           api_key: ${oc.env:ANTHROPIC_API_KEY}
     ```
@@ -111,7 +111,7 @@ model:
     model:
       provider: bedrock
       params:
-        model_id: anthropic.claude-3-5-haiku-20241022-v1:0
+        model_id: anthropic.claude-haiku-5-5
         region_name: us-west-2
     ```
 
@@ -122,7 +122,7 @@ Add named profiles under `warp/config/profiles.toml`. Your values are **deep-mer
 ```toml title="warp/config/profiles.toml"
 [model.fast]
 import_path = "strands.models.bedrock.BedrockModel"
-params = { model_id = "anthropic.claude-3-5-haiku-20241022-v1:0" }
+params = { model_id = "anthropic.claude-haiku-5-5" }
 
 [model.gpt4]
 provider = "openai"

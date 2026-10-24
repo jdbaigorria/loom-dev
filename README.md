@@ -1,6 +1,6 @@
 # LOOM
 
-**Declarative AI agent framework** — scaffold, configure, and run agents from YAML and a single CLI, built on [Strands Agents](https://github.com/strands-agents/sdk-python).
+**Declarative AI agent framework** — scaffold, configure, and run agents from YAML and a single CLI, built on [Strands Agents](https://github.com/strands-agents/harness-sdk).
 
 > **Pre-release (v1.0.0rc1)** — APIs, CLI flags, and on-disk layouts may change without a major version bump. Feedback and issue reports are welcome. Not recommended for production without your own hardening and review.
 
@@ -8,7 +8,7 @@
 
 ## Why LOOM?
 
-Loom is a **build** library: it turns a declarative YAML definition into a native [Strands](https://github.com/strands-agents/sdk-python) `Agent` / `Graph` / `Swarm` and hands it back. Execution belongs to the caller — Loom does not wrap or manage runtime.
+Loom is a **build** library: it turns a declarative YAML definition into a native [Strands](https://github.com/strands-agents/harness-sdk) `Agent` / `Graph` / `Swarm` and hands it back. Execution belongs to the caller — Loom does not wrap or manage runtime.
 
 - **Fast scaffolding** — `loom init` and `loom agent new` generate a consistent workspace (`loom.toml`, app config, agent folders).
 - **Declarative agents** — Model, prompts, tools, hooks, sessions, retries, and structured output are driven by validated YAML (fail fast at load time via `build_agent` and `loom agent validate`).
@@ -41,7 +41,7 @@ runtime can install just the slim core. Not on PyPI yet — install pinned to a
 pip install "loom-declarative @ git+https://github.com/jdbaigorria/loom-dev@vX.Y.Z"
 # Full authoring experience (CLI, wizards, evals, AWS doctor):
 pip install "loom-declarative[all] @ git+https://github.com/jdbaigorria/loom-dev@vX.Y.Z"
-# or pick extras à la carte: [cli], [evals], [aws]
+# or pick extras à la carte: [cli], [evals] (alias of loom-declarative-evals), [aws]
 uv add "loom-declarative[cli] @ git+https://github.com/jdbaigorria/loom-dev@vX.Y.Z"
 ```
 
@@ -276,7 +276,7 @@ Opinionated presets for **models**, **retry** and **conversation**, referenced b
 # warp/config/profiles.toml
 [model.fast]
 import_path = "strands.models.bedrock.BedrockModel"
-params = { model_id = "anthropic.claude-3-5-haiku-20241022-v1:0" }
+params = { model_id = "anthropic.claude-haiku-5-5" }
 
 [retry.aggressive]
 max_attempts = 6

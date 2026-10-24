@@ -160,7 +160,7 @@ def ask_app_conversation() -> ConversationConfig:
         else:  # agent
             config["summarization_agent"] = {
                 "model_id": inquirer.text(
-                    message="🤖 Model ID:", default="anthropic.claude-3-5-haiku-20241022-v1:0"
+                    message="🤖 Model ID:", default="anthropic.claude-haiku-5-5"
                 ).execute(),
                 "temperature": float(
                     inquirer.number(

@@ -34,7 +34,10 @@ import json
 import logging
 from datetime import UTC, datetime
 
-from loom.adapters.strands.evals import (
+from loom.core.paths import build_workspace_paths
+from loom.dev import run_dev
+from loom.schemas.context import LoomSession
+from loom_evals.adapters.strands_evals import (
     Case,
     EvaluationReport,
     FaithfulnessEvaluator,
@@ -47,12 +50,10 @@ from loom.adapters.strands.evals import (
     ToolParameterAccuracyEvaluator,
     ToolSelectionAccuracyEvaluator,
     TrajectoryEvaluator,
+    split_reports,
     tools_use_extractor,
 )
-from loom.core.loaders.evaluator import get_experiment
-from loom.core.paths import build_workspace_paths
-from loom.dev import run_dev
-from loom.schemas.context import LoomSession
+from loom_evals.loader import evaluator_loom_name, get_experiment
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +96,20 @@ class LoomEvals:
             task_fn = self._build_task_function(experiment.evaluators)
             logger.debug("Task function built for agent '%s'", self.name)
 
-            reports: list[EvaluationReport] = experiment.run_evaluations(task_fn)
+            raw = experiment.run_evaluations(task_fn)
+            names = [
+                evaluator_loom_name(ev) or f"evaluator_{index}"
+                for index, ev in enumerate(experiment.evaluators)
+            ]
+            pairs = split_reports(raw, names)
+            reports: list[EvaluationReport] = []
+            for name, report in pairs:
+                if isinstance(name, str):
+                    try:
+                        setattr(report, "evaluator_name", name)
+                    except Exception:
+                        pass
+                reports.append(report)
             logger.info("Evaluation completed: %d report(s) generated", len(reports))
 
             self._save_reports(reports)

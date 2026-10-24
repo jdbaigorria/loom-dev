@@ -1,25 +1,20 @@
 from typer import Argument, Exit, Option, Typer
 
-from loom.core.exceptions import (
-    AgentNotFoundError,
-    EvalsAlreadyExistsError,
-    EvalsNotFoundError,
-    EvalsRunError,
+from loom.core.exceptions import AgentNotFoundError
+from loom.utils.ui import console, print_error, print_hint, print_success, print_warning
+from loom_evals.exceptions import EvalsAlreadyExistsError, EvalsNotFoundError, EvalsRunError
+from loom_evals.render import (
+    render_evals_compare,
+    render_evals_failures,
+    render_evals_regression,
+    render_evals_results,
 )
-from loom.services.evals_service import (
+from loom_evals.service import (
     check_regression,
     get_failed_cases,
     get_history,
     new_evals,
     run_evals,
-)
-from loom.utils.ui import console, print_error, print_hint, print_success, print_warning
-
-from ..renders.evals_renderer import (
-    render_evals_compare,
-    render_evals_failures,
-    render_evals_regression,
-    render_evals_results,
 )
 
 app: Typer = Typer()

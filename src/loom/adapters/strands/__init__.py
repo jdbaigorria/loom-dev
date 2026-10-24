@@ -20,10 +20,7 @@ from ._resolve import LoomStrandsCompatError, is_available, resolve
 Agent = resolve("strands.Agent", "strands.agent.agent.Agent")
 tool = resolve("strands.tool", "strands.tools.decorator.tool")
 ToolContext = resolve("strands.ToolContext", "strands.tools.context.ToolContext")
-ModelRetryStrategy = resolve(
-    "strands.ModelRetryStrategy",
-    "strands.agent.model_retry.ModelRetryStrategy",
-)
+ModelRetryStrategy = resolve("strands.ModelRetryStrategy")
 AgentResult = resolve(
     "strands.agent.agent_result.AgentResult",
     "strands.agent.AgentResult",
@@ -107,12 +104,12 @@ MultiAgentResult = resolve(
     optional=True,
 )
 
-# --- Bidirectional (experimental) ----------------------------------------------
-# Optional + EXPERIMENTAL: full-duplex voice/streaming agent. Gated by capabilities;
-# the builder raises a friendly error when the installed Strands lacks it.
+# --- Bidirectional -------------------------------------------------------------
+# Optional: full-duplex voice/streaming agent. Gated by capabilities; the builder
+# raises a friendly error when the installed Strands lacks it.
 BidiAgent = resolve(
-    "strands.experimental.bidi.BidiAgent",
-    "strands.experimental.bidi.agent.BidiAgent",
+    "strands.bidi.BidiAgent",
+    "strands.bidi.agent.BidiAgent",
     optional=True,
 )
 

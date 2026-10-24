@@ -1,7 +1,7 @@
 """
 tests/unit/test_evaluator.py
 
-Cubre loom.core.loaders.evaluator:
+Cubre loom_evals.loader:
   - _to_case
   - _to_evaluator
   - _load_experiment
@@ -13,8 +13,8 @@ from pathlib import Path
 
 import pytest
 
-from loom.core.loaders.evaluator import _load_experiment, _to_case, _to_evaluator, get_experiment
-from loom.schemas.config.evals import CaseConfig, EvaluatorConfig
+from loom_evals.loader import _load_experiment, _to_case, _to_evaluator, get_experiment
+from loom_evals.schemas import CaseConfig, EvaluatorConfig
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -53,7 +53,7 @@ class TestToCase:
 
     def test_convierte_config_a_case_de_strands(self):
         """EVL-C01: CaseConfig básico → strands Case con name e input"""
-        from loom.adapters.strands.evals import Case
+        from loom_evals.adapters.strands_evals import Case
 
         result = _to_case([_case_cfg()])
         assert len(result) == 1
@@ -94,7 +94,7 @@ class TestToEvaluatorWithRubric:
 
     def test_output_retorna_output_evaluator(self):
         """EVL-E01: type='output' → OutputEvaluator con rubric"""
-        from loom.adapters.strands.evals import OutputEvaluator
+        from loom_evals.adapters.strands_evals import OutputEvaluator
 
         result = _to_evaluator([_eval_cfg(type="output")])
         assert isinstance(result[0], OutputEvaluator)
@@ -102,7 +102,7 @@ class TestToEvaluatorWithRubric:
 
     def test_trajectory_retorna_trajectory_evaluator(self):
         """EVL-E02: type='trajectory' → TrajectoryEvaluator con rubric"""
-        from loom.adapters.strands.evals import TrajectoryEvaluator
+        from loom_evals.adapters.strands_evals import TrajectoryEvaluator
 
         result = _to_evaluator([_eval_cfg(type="trajectory")])
         assert isinstance(result[0], TrajectoryEvaluator)
@@ -110,7 +110,7 @@ class TestToEvaluatorWithRubric:
 
     def test_interactions_retorna_interactions_evaluator(self):
         """EVL-E03: type='interactions' → InteractionsEvaluator con rubric"""
-        from loom.adapters.strands.evals import InteractionsEvaluator
+        from loom_evals.adapters.strands_evals import InteractionsEvaluator
 
         result = _to_evaluator([_eval_cfg(type="interactions")])
         assert isinstance(result[0], InteractionsEvaluator)
@@ -227,50 +227,41 @@ class TestToEvaluatorFieldExclusion:
 # _to_evaluator — tipos sin rubric (EVL-E13 a EVL-E17)
 # ---------------------------------------------------------------------------
 
-_INCLUDE_INPUTS_BUG = (
-    "BUG en evaluator: este evaluador no acepta 'include_inputs' pero el módulo "
-    "lo pasa porque no está en la lista de exclusión para este tipo."
-)
-
 
 class TestToEvaluatorNoRubric:
     """EVL-E13 a EVL-E17"""
 
     def test_helpfulness_retorna_evaluador_correcto_sin_rubric(self):
         """EVL-E13: type='helpfulness' → HelpfulnessEvaluator, rubric excluido"""
-        from loom.adapters.strands.evals import HelpfulnessEvaluator
+        from loom_evals.adapters.strands_evals import HelpfulnessEvaluator
 
         result = _to_evaluator([_eval_cfg(type="helpfulness")])
         assert isinstance(result[0], HelpfulnessEvaluator)
 
-    @pytest.mark.xfail(reason=_INCLUDE_INPUTS_BUG, strict=True)
     def test_faithfulness_retorna_evaluador_correcto_sin_rubric(self):
         """EVL-E14: type='faithfulness' → FaithfulnessEvaluator, rubric excluido"""
-        from loom.adapters.strands.evals import FaithfulnessEvaluator
+        from loom_evals.adapters.strands_evals import FaithfulnessEvaluator
 
         result = _to_evaluator([_eval_cfg(type="faithfulness")])
         assert isinstance(result[0], FaithfulnessEvaluator)
 
-    @pytest.mark.xfail(reason=_INCLUDE_INPUTS_BUG, strict=True)
     def test_goal_success_rate_retorna_evaluador_correcto_sin_rubric(self):
         """EVL-E15: type='goal_success_rate' → GoalSuccessRateEvaluator, rubric excluido"""
-        from loom.adapters.strands.evals import GoalSuccessRateEvaluator
+        from loom_evals.adapters.strands_evals import GoalSuccessRateEvaluator
 
         result = _to_evaluator([_eval_cfg(type="goal_success_rate")])
         assert isinstance(result[0], GoalSuccessRateEvaluator)
 
-    @pytest.mark.xfail(reason=_INCLUDE_INPUTS_BUG, strict=True)
     def test_tool_selection_retorna_evaluador_correcto_sin_rubric(self):
         """EVL-E16: type='tool_selection' → ToolSelectionAccuracyEvaluator, rubric excluido"""
-        from loom.adapters.strands.evals import ToolSelectionAccuracyEvaluator
+        from loom_evals.adapters.strands_evals import ToolSelectionAccuracyEvaluator
 
         result = _to_evaluator([_eval_cfg(type="tool_selection")])
         assert isinstance(result[0], ToolSelectionAccuracyEvaluator)
 
-    @pytest.mark.xfail(reason=_INCLUDE_INPUTS_BUG, strict=True)
     def test_tool_parameter_retorna_evaluador_correcto_sin_rubric(self):
         """EVL-E17: type='tool_parameter' → ToolParameterAccuracyEvaluator, rubric excluido"""
-        from loom.adapters.strands.evals import ToolParameterAccuracyEvaluator
+        from loom_evals.adapters.strands_evals import ToolParameterAccuracyEvaluator
 
         result = _to_evaluator([_eval_cfg(type="tool_parameter")])
         assert isinstance(result[0], ToolParameterAccuracyEvaluator)
@@ -286,7 +277,7 @@ class TestLoadExperiment:
 
     def test_carga_yaml_y_retorna_experiment_config(self, monkeypatch, tmp_path):
         """EVL-L01: YAML válido → ExperimentConfig con cases y evaluators"""
-        from loom.schemas.config.evals import ExperimentConfig
+        from loom_evals.schemas import ExperimentConfig
 
         yaml_path = tmp_path / "warp" / "agents" / "my_agent" / "evals" / "evals.yml"
         _write_eval_yaml(
@@ -302,7 +293,7 @@ class TestLoadExperiment:
         """,
         )
         monkeypatch.setattr(
-            "loom.core.loaders.evaluator.build_workspace_paths",
+            "loom_evals.loader.build_workspace_paths",
             lambda **_: _make_paths(tmp_path),
         )
 
@@ -331,7 +322,7 @@ class TestLoadExperiment:
         """,
         )
         monkeypatch.setattr(
-            "loom.core.loaders.evaluator.build_workspace_paths",
+            "loom_evals.loader.build_workspace_paths",
             lambda **_: _make_paths(tmp_path),
         )
 
@@ -342,7 +333,7 @@ class TestLoadExperiment:
     def test_yaml_inexistente_lanza_error(self, monkeypatch, tmp_path):
         """EVL-L03: archivo YAML inexistente → FileNotFoundError"""
         monkeypatch.setattr(
-            "loom.core.loaders.evaluator.build_workspace_paths",
+            "loom_evals.loader.build_workspace_paths",
             lambda **_: _make_paths(tmp_path),
         )
         with pytest.raises(Exception):
@@ -359,7 +350,7 @@ class TestGetExperiment:
 
     def test_retorna_experiment_de_strands_con_cases_y_evaluadores(self, monkeypatch, tmp_path):
         """EVL-G01: YAML válido → strands_evals.Experiment con Case y OutputEvaluator"""
-        from loom.adapters.strands.evals import Experiment, OutputEvaluator
+        from loom_evals.adapters.strands_evals import Experiment, OutputEvaluator
 
         yaml_path = tmp_path / "warp" / "agents" / "my_agent" / "evals" / "evals.yml"
         _write_eval_yaml(
@@ -375,7 +366,7 @@ class TestGetExperiment:
         """,
         )
         monkeypatch.setattr(
-            "loom.core.loaders.evaluator.build_workspace_paths",
+            "loom_evals.loader.build_workspace_paths",
             lambda **_: _make_paths(tmp_path),
         )
 
@@ -387,7 +378,7 @@ class TestGetExperiment:
 
     def test_multiples_tipos_de_evaluadores_se_mapean_correctamente(self, monkeypatch, tmp_path):
         """EVL-G02: YAML con output + trajectory + helpfulness → instancias correctas"""
-        from loom.adapters.strands.evals import (
+        from loom_evals.adapters.strands_evals import (
             HelpfulnessEvaluator,
             OutputEvaluator,
             TrajectoryEvaluator,
@@ -410,7 +401,7 @@ class TestGetExperiment:
         """,
         )
         monkeypatch.setattr(
-            "loom.core.loaders.evaluator.build_workspace_paths",
+            "loom_evals.loader.build_workspace_paths",
             lambda **_: _make_paths(tmp_path),
         )
 

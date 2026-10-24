@@ -630,8 +630,7 @@ class TestValidateAgent:
         self._make_agent_yaml(
             fresh_paths,
             "badbuiltin_agent",
-            "name: badbuiltin_agent\nsystem_prompt: |-\n  texto inline\n"
-            "tools:\n  - builtin.nope\n",
+            "name: badbuiltin_agent\nsystem_prompt: |-\n  texto inline\ntools:\n  - builtin.nope\n",
         )
 
         results = validate_agent("badbuiltin_agent")
@@ -671,7 +670,7 @@ class TestRunDoctor:
 
         sections = run_doctor(check_aws=False)
 
-        assert set(sections.keys()) == {"system", "aws", "project", "agents"}
+        assert set(sections.keys()) == {"system", "aws", "project", "agents", "plugins"}
 
     def test_sistema_siempre_incluye_python_y_loom(self, doctor_env):
         """SVC-DR02: system section has at least 2 checks (Python + loom)"""

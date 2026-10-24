@@ -2,37 +2,39 @@
 
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from .strict import StrictConfig
 
 
-class S3Config(BaseModel):
+class S3Config(StrictConfig):
     """Connection parameters for an S3-backed session store."""
 
     bucket: str
     prefix: str
 
 
-class FileConfig(BaseModel):
+class FileConfig(StrictConfig):
     """Connection parameters for a file-backed session store."""
 
     path: str
 
 
-class S3Session(BaseModel):
+class S3Session(StrictConfig):
     """Session configuration that persists conversations to S3."""
 
     provider: Literal["s3"] = "s3"
     config: S3Config
 
 
-class FileSession(BaseModel):
+class FileSession(StrictConfig):
     """Session configuration that persists conversations to the local filesystem."""
 
     provider: Literal["file"] = "file"
     config: FileConfig
 
 
-class CustomSession(BaseModel):
+class CustomSession(StrictConfig):
     """Session backed by a user-provided ``SessionManager`` subclass.
 
     Loom ships only ``file`` and ``s3``; any other backend (DynamoDB, Redis, …)
@@ -49,6 +51,4 @@ class CustomSession(BaseModel):
     config: dict[str, Any] = Field(default_factory=dict)
 
 
-SessionConfig = Annotated[
-    S3Session | FileSession | CustomSession, Field(discriminator="provider")
-]
+SessionConfig = Annotated[S3Session | FileSession | CustomSession, Field(discriminator="provider")]

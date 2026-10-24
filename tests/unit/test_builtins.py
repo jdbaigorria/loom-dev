@@ -435,7 +435,12 @@ class TestApiCallDomain:
         tool = make_apicall(
             name="x",
             description="d",
-            bind={"base_url": "https://x.com", "path": "/a", "method": "GET", "query": {"k": "{k}"}},
+            bind={
+                "base_url": "https://x.com",
+                "path": "/a",
+                "method": "GET",
+                "query": {"k": "{k}"},
+            },
             expose={"k": {"type": "string", "enum": ["a", "b"], "description": "k"}},
         )
         assert tool.tool_spec["inputSchema"]["json"]["properties"]["k"]["enum"] == ["a", "b"]
@@ -573,7 +578,13 @@ class TestLoaderBuiltin:
     def test_overlay_se_ignora_en_builtin_que_no_lo_declara(self):
         """apicall no tiene parametro boto_session: el overlay no le rompe la llamada."""
         cfg = ToolConfig.model_validate(
-            {"builtin.apicall": {"name": "svc", "base_url": "https://x.com", "allowed_paths": ["/v1/*"]}}
+            {
+                "builtin.apicall": {
+                    "name": "svc",
+                    "base_url": "https://x.com",
+                    "allowed_paths": ["/v1/*"],
+                }
+            }
         )
         tools = get_tools([cfg], *_DIRS, overlay={"boto_session": MagicMock()})
         assert len(tools) == 1
