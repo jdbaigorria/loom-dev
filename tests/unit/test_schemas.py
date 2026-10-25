@@ -464,6 +464,8 @@ def test_example_and_new_agent_yaml_still_validate():
 
     root = Path(__file__).resolve().parents[2]
     for path in (root / "examples").rglob("*.yml"):
+        if path.name == "app.yml":
+            continue  # app config, covered by test_example_app_yaml_parses_as_app_config
         AgentConfig.model_validate(yaml.safe_load(path.read_text(encoding="utf-8")))
 
     template = (root / "src/loom/templates/new/config/{{folder_name}}.yml.j2").read_text(

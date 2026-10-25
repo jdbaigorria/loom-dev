@@ -40,7 +40,7 @@ jobs:
         # Refuses to release a wheel whose `loom init` produces an empty project.
         run: |
           uv venv /tmp/loom-smoke
-          uv pip install --python /tmp/loom-smoke/bin/python "$(echo dist/*.whl)[cli]"
+          uv pip install --python /tmp/loom-smoke/bin/python "$(ls dist/loom_declarative-*.whl)[cli]"
           work=$(mktemp -d)
           cd "$work"
           /tmp/loom-smoke/bin/loom init -f

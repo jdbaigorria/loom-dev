@@ -17,6 +17,7 @@ import pytest
 import yaml
 
 from loom.schemas.config.agent import AgentConfig
+from loom.schemas.config.app import AppConfig
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -27,7 +28,12 @@ EXAMPLES_DIR = Path(__file__).parent.parent.parent / "examples"
 
 def _find_agent_yamls() -> list[Path]:
     """Return all *.yml files under examples/ that look like agent configs."""
-    return sorted(EXAMPLES_DIR.rglob("*.yml"))
+    return sorted(p for p in EXAMPLES_DIR.rglob("*.yml") if p.name != "app.yml")
+
+
+def _find_app_yamls() -> list[Path]:
+    """Return the app.yml files under examples/."""
+    return sorted(EXAMPLES_DIR.rglob("app.yml"))
 
 
 # ---------------------------------------------------------------------------
@@ -44,8 +50,7 @@ def test_example_yaml_parses_as_agent_config(yml_path: Path) -> None:
     If a YAML file contains a field that no longer exists in the schema, or is
     missing a required field, this test will fail — catching schema drift early.
 
-    Note: AgentConfig ignores unknown fields (no extra='forbid'), so extra keys
-    like 'version:' do not cause failures. Only truly required fields matter.
+    AgentConfig forbids unknown keys, so a typo or a removed field fails here too.
     """
     raw = yaml.safe_load(yml_path.read_text(encoding="utf-8"))
     assert isinstance(raw, dict), f"{yml_path}: expected a YAML mapping, got {type(raw)}"
@@ -55,6 +60,16 @@ def test_example_yaml_parses_as_agent_config(yml_path: Path) -> None:
 
     # Basic sanity: name is always required
     assert config.name, f"{yml_path}: AgentConfig.name is empty"
+
+
+@pytest.mark.parametrize(
+    "yml_path", _find_app_yamls(), ids=lambda p: p.relative_to(EXAMPLES_DIR).as_posix()
+)
+def test_example_app_yaml_parses_as_app_config(yml_path: Path) -> None:
+    """Every examples/**/app.yml must be parseable as AppConfig."""
+    raw = yaml.safe_load(yml_path.read_text(encoding="utf-8"))
+    assert isinstance(raw, dict), f"{yml_path}: expected a YAML mapping, got {type(raw)}"
+    AppConfig(**raw)
 
 
 # ---------------------------------------------------------------------------
