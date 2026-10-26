@@ -194,7 +194,7 @@ Placeholders can appear in `path`, `query`, `body` and `headers`. A whole-string
       name: create_ticket
       description: Open a support ticket for an employee.
       bind:
-        base_url: https://api.example-gov.example
+        base_url: https://api.helpdesk.example
         path: /tickets
         method: POST
         static_headers:                      # sent verbatim (not templated)
