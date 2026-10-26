@@ -50,6 +50,30 @@ tools:
 
 Shared tools are available to all agents in the workspace, avoiding duplication.
 
+## Code shared between tools
+
+`warp/agents/tools/` is on `sys.path` once you build an agent from a workspace, so shared tools can import helper code that lives beside them. Put the helpers in a **subpackage with its own name**, and import it absolutely:
+
+```text
+warp/agents/tools/
+├── acme/
+│   ├── __init__.py
+│   └── log.py
+└── lookup.py
+```
+
+```python title="warp/agents/tools/lookup.py"
+from acme.log import get_logger   # no sys.path.insert needed
+
+logger = get_logger(__name__)
+```
+
+- Only the shared directory is added. Agent-local `tools/` folders are not, because two agents with a `utils.py` would collide.
+- The directory is **appended** to `sys.path`, so an installed package of the same name wins over your helper. A distinctive package name (`acme`, not `utils`) avoids that.
+- In `loom agent dev`, editing a helper takes effect on the next build.
+- Keep tool definitions independent of the app that runs them: a tool must not import from the application hosting the agent.
+- A tool module's `__name__` is `loom_workspace.shared.<tool>` or `loom_workspace.agents.<agent>.<tool>`, so `logging.getLogger(__name__)` tells you which agent and tool logged.
+
 ## Declarative tool files (YAML)
 
 A tool that specialises a builtin (see below) can live as a `{name}.yaml` file in the same `tools/` folders as Python tools — agent-local or shared — instead of being written inline in the agent YAML. The **file name is the tool name** (symmetric with `.py`, where the function name is the tool name), so the file must not set `name`.
