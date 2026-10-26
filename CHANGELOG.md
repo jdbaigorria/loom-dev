@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Catalog `labels`.** Agents and workflows can declare flat `labels:` (scalars or
+  lists of scalars, keys like `areas` or `acme.tier`). `TargetInfo.labels` reports
+  them from the effective config, so `app.yml` `defaults.labels` apply. Loom does not
+  interpret labels. `list_targets` now reads each agent once and applies `defaults`
+  to `kind` and `description` too.
+- **Shared tools directory on `sys.path`.** Shared tools can import helper packages
+  from `warp/agents/tools/`; `loom agent dev` reloads them. Tool modules are named
+  `loom_workspace.shared.<tool>` / `loom_workspace.agents.<agent>.<tool>`.
 - **Experimental checkpointing.** `checkpointing: true` on an agent pauses at
   cycle boundaries (`stop_reason: checkpoint`). `loom agent run` resumes with
   `checkpointResume`. The checkpoint does not store the conversation; set
@@ -29,6 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Hooks must be `HookProvider` classes.** A hook reference that resolves to a function
+  now raises `HookLoadError` instead of being called. The hooks guide was rewritten to
+  match the loader; `defaults.hooks` are replaced, not appended, by agent `hooks`.
 - **`strands-agents` floor is 1.62.0.** HTTP MCP transports are built with
   `MCPClient(url=…)`. `stdio` and `sse` stay behind the adapter. `kind: bidi` with
   `tool_executor` raises `AgentConfigError`. `BidiAgent` is imported from `strands.bidi`.
