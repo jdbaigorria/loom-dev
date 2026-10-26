@@ -41,7 +41,7 @@ tools:
 
 # Hooks (optional)
 hooks:
-  - log_invocation           # built-in or warp/hooks/log_invocation.py
+  - logging                  # built-in, or warp/hooks/<name>.py
 
 # Structured output (optional)
 output: my_pkg.schemas.OrderResponse   # dotted import path to a Pydantic model
@@ -124,11 +124,11 @@ See [Tools](tools.md) for shared tools, MCP servers, and tool parameters.
 
 ## Hooks
 
-Hooks run before and after each agent invocation. Declare them by name:
+Hooks are `HookProvider` classes that react to agent lifecycle events. Declare them by name:
 
 ```yaml
 hooks:
-  - log_invocation      # built-in
+  - logging             # built-in
   - my_custom_hook      # warp/hooks/my_custom_hook.py
   - audit_logger: { destination: s3 }  # with parameters
 ```
@@ -192,7 +192,7 @@ defaults:
   model: economic
   retry: low
   hooks:
-    - log_invocation
+    - logging
 ```
 
 ## Running an agent (Python)
@@ -241,6 +241,26 @@ print(run.response.answer, run.response.metadata.total_tokens)
 
 !!! tip
     `run_dev` always tears the target down after one turn, so it cannot hold a paused interrupt open across calls (the response may still *report* pending interrupts in `.interrupts`). Reach for `build_agent` directly when you need to answer them across separate calls.
+
+## Labels and routing
+
+Declare product metadata in `labels:` and read it back through discovery. Loom reports labels and never interprets them, so the meaning of each key is yours:
+
+```yaml title="warp/agents/billing/config/billing.yml"
+name: billing
+description: Facturación y pagos
+labels:
+  areas: [BILLING, BACKOFFICE]
+  expose_metrics: true
+```
+
+```python
+import loom
+
+by_area = {a: t.name for t in loom.discover() for a in t.labels.get("areas", ())}
+```
+
+Adding an agent is then just adding its folder: the router is built from the catalog. Selecting a target by label at request time (`by_label`) is the harness's job, not Loom's. See [`labels`](../reference/agent-yaml.md#labels) for the key rules and merge behaviour.
 
 ## Listing and managing agents
 

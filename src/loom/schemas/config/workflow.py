@@ -26,6 +26,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from .labels import LabelKey, LabelValue
+
 
 class GraphNodeConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -46,6 +48,7 @@ class _WorkflowBase(BaseModel):
     model_config = ConfigDict(extra="forbid")
     name: str
     description: str = "Workflow created by Loom"
+    labels: dict[LabelKey, LabelValue] = Field(default_factory=dict)
 
 
 class GraphWorkflowConfig(_WorkflowBase):

@@ -41,7 +41,7 @@ tools:
 
 # Hooks (optional)
 hooks:
-  - log_invocation
+  - logging
   - my_pkg.hooks.audit_logger
   - my_hook: { param: value }
 
@@ -101,6 +101,25 @@ tool_executor: concurrent   # or: sequential
 
 Human-readable description. Surfaced in catalog/discovery listings and used as the routing signal when the agent is wrapped as a tool (`Agent.as_tool`) — keep it accurate and specific.
 
+### labels
+
+**Default:** `{}`
+
+Flat key/value metadata for your product, reported by discovery (`TargetInfo.labels`). Loom carries labels and never interprets them: they do not reach the `strands.Agent` or the trace attributes. Selecting targets by label is the harness's job.
+
+```yaml
+labels:
+  areas: [BILLING, BACKOFFICE]
+  expose_metrics: true
+  acme.tier: gold
+```
+
+- **Keys** match `^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$`. Use a dotted prefix (`acme.tier`) so two products sharing a workspace do not collide. The `loom.` prefix is reserved for Loom.
+- **Values** are a string, number or boolean, or a list of those. Nested objects are rejected.
+- A list means "this target serves each of these values".
+- `workflows/*.yml` accept the same field.
+- `app.yml` `defaults.labels` merge in key by key; a list in the agent **replaces** the default list.
+
 ### model
 
 **Default:** `"default"` (Claude Sonnet 5.5 on Bedrock)
@@ -156,7 +175,7 @@ List of tool names. Each entry can be:
 **Default:** `null`
 
 List of hook names. Each entry can be:
-- A string: built-in name or `my_pkg.module.hook_func`
+- A string: built-in name (`logging`, `tool_tracker`, `rate_limit`), a file in `warp/hooks/`, or `my_pkg.module.ClassName` / `my_pkg.module:ClassName` (a `HookProvider` class, not a function)
 - A single-key dict with params: `{ my_hook: { key: value } }`
 
 ### output
