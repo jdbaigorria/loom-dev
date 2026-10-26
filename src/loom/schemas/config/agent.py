@@ -2,12 +2,13 @@
 
 from typing import Literal
 
-from pydantic import model_validator
+from pydantic import Field, model_validator
 
 from .background import BackgroundTasksConfig
 from .conversations import ConversationConfig
 from .hook import HookConfig
 from .intervention import InterventionConfig
+from .labels import LabelKey, LabelValue
 from .mcp import MCPServerConfig
 from .memory import MemoryConfig
 from .models import ModelConfig
@@ -29,6 +30,8 @@ class AgentConfig(StrictConfig):
     # and omits conversation/structured-output/retry. Gated by capability + extra.
     kind: Literal["agent", "bidi"] = "agent"
     description: str = "Agent created by Loom"
+    # Product-owned catalog metadata. Loom reports it in discovery, never reads it.
+    labels: dict[LabelKey, LabelValue] = Field(default_factory=dict)
     system_prompt: PromptConfig = PromptConfig(prompt="prompt.md")
     # Profile name (resolved from loom.config.profiles) or an inline config.
     model: ModelConfig = "default"

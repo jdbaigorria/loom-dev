@@ -253,7 +253,8 @@ def _load_tool(
         tool_def.is_shared,
     )
 
-    module_name = f"{base_dir.name}.tools.{tool_def.name}"
+    owner = "shared" if tool_def.is_shared else f"agents.{agent_dir.name}" if agent_dir else "local"
+    module_name = f"loom_workspace.{owner}.{tool_def.name}"
     module = import_module_from_file(tool_file, module_name)
 
     loaded_tools = []

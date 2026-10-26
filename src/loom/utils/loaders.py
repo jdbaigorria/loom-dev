@@ -31,6 +31,7 @@ import importlib
 import importlib.util
 import logging
 import os
+import sys
 import warnings
 from functools import cache
 from pathlib import Path
@@ -228,6 +229,36 @@ def _load_file_content(abs_file_path: str) -> str:
     except Exception as e:
         logger.error("Error reading file '%s': %s", path, str(e), exc_info=True)
         raise OSError(f"Error reading file '{path}': {e}")
+
+
+_WORKSPACE_PATHS: list[Path] = []
+
+
+def ensure_on_sys_path(path: Path) -> None:
+    """Append ``path`` to ``sys.path`` once (compared by resolved path).
+
+    Appended, never inserted first: a workspace file named like a stdlib module
+    (``json.py``) must not shadow it for the whole process. The directory is also
+    remembered so :func:`evict_workspace_modules` can drop what was imported from it.
+    """
+    resolved = path.resolve()
+    if resolved not in _WORKSPACE_PATHS:
+        _WORKSPACE_PATHS.append(resolved)
+    entry = str(resolved)
+    if not any(p and Path(p).resolve() == resolved for p in sys.path):
+        sys.path.append(entry)
+
+
+def evict_workspace_modules() -> None:
+    """Drop from ``sys.modules`` every module loaded from a registered workspace dir.
+
+    Used by the dev loop so an edited helper is re-imported on the next build.
+    """
+    for name, mod in list(sys.modules.items()):
+        file = getattr(mod, "__file__", None)
+        if file and any(Path(file).resolve().is_relative_to(d) for d in _WORKSPACE_PATHS):
+            del sys.modules[name]
+    importlib.invalidate_caches()
 
 
 def import_module_from_file(file_path: Path, module_name: str) -> ModuleType:

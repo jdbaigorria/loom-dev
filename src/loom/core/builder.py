@@ -36,6 +36,7 @@ from loom.schemas.config.agent import AgentConfig
 from loom.schemas.config.app import AppConfig
 from loom.schemas.config.tool import ToolConfig
 from loom.schemas.context import LoomSession
+from loom.utils.loaders import ensure_on_sys_path
 
 from .loaders.app import resolve_env
 from .loaders.background import get_background_tasks
@@ -410,6 +411,9 @@ def build_agent(
     # sources (e.g. a document DB) have none, so their configs must be hydrated and
     # reference code by dotted path.
     paths = src.workspace if isinstance(src, FileConfigSource) else None
+    if paths is not None and paths.shared_tools_dir.is_dir():
+        # Lets shared tools import helper packages that live beside them.
+        ensure_on_sys_path(paths.shared_tools_dir)
 
     return build(
         agent_config,
