@@ -167,7 +167,7 @@ See [Conversation management](../guides/conversations.md).
 
 **Default:** `null`
 
-YAML block merged into every agent's config. Agent values win on conflict.
+YAML block merged into every agent's config. Agent values win on conflict. Mappings (such as `labels`) merge key by key; lists (such as `hooks` or a `labels` list value) are **replaced** by the agent's, not appended to.
 
 ```yaml
 defaults:

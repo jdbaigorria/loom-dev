@@ -101,6 +101,25 @@ tool_executor: concurrent   # or: sequential
 
 Human-readable description. Surfaced in catalog/discovery listings and used as the routing signal when the agent is wrapped as a tool (`Agent.as_tool`) — keep it accurate and specific.
 
+### labels
+
+**Default:** `{}`
+
+Flat key/value metadata for your product, reported by discovery (`TargetInfo.labels`). Loom carries labels and never interprets them: they do not reach the `strands.Agent` or the trace attributes. Selecting targets by label is the harness's job.
+
+```yaml
+labels:
+  areas: [BILLING, BACKOFFICE]
+  expose_metrics: true
+  acme.tier: gold
+```
+
+- **Keys** match `^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$`. Use a dotted prefix (`acme.tier`) so two products sharing a workspace do not collide. The `loom.` prefix is reserved for Loom.
+- **Values** are a string, number or boolean, or a list of those. Nested objects are rejected.
+- A list means "this target serves each of these values".
+- `workflows/*.yml` accept the same field.
+- `app.yml` `defaults.labels` merge in key by key; a list in the agent **replaces** the default list.
+
 ### model
 
 **Default:** `"default"` (Claude Sonnet 5.5 on Bedrock)

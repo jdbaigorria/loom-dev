@@ -75,25 +75,31 @@ class FileConfigSource:
         sources are then resolved to text (so ``build()`` never reads them off
         disk).
         """
+        agent_config = self._effective_agent_config(name, self.get_app_config(env))
+        return self._hydrate(agent_config, name)
+
+    def _effective_agent_config(self, name: str, app_config: AppConfig) -> AgentConfig:
+        """The agent's validated config with ``app.yml`` defaults applied, un-hydrated.
+
+        Reads the agent YAML once and touches no prompt or tool files, so discovery
+        can use it cheaply.
+        """
         agent_yaml = resolve_existing_agent_yaml(self._ws, name)
-        app_config = self.get_app_config(env)
 
         if not app_config.defaults:
-            agent_config = get_agent_config(agent_yaml)
-        else:
-            agent_raw = load_config(agent_yaml)
-            merged_raw = OmegaConf.to_container(
-                OmegaConf.merge(
-                    OmegaConf.create(app_config.defaults),
-                    OmegaConf.create(agent_raw),
-                ),
-                resolve=True,
-            )
-            if not isinstance(merged_raw, dict):
-                raise TypeError(f"Expected merged config to be a dict, got {type(merged_raw)}")
-            agent_config = AgentConfig(**cast(dict[str, Any], merged_raw))
+            return get_agent_config(agent_yaml)
 
-        return self._hydrate(agent_config, name)
+        agent_raw = load_config(agent_yaml)
+        merged_raw = OmegaConf.to_container(
+            OmegaConf.merge(
+                OmegaConf.create(app_config.defaults),
+                OmegaConf.create(agent_raw),
+            ),
+            resolve=True,
+        )
+        if not isinstance(merged_raw, dict):
+            raise TypeError(f"Expected merged config to be a dict, got {type(merged_raw)}")
+        return AgentConfig(**cast(dict[str, Any], merged_raw))
 
     def get_workflow_config(self, name: str) -> GraphWorkflowConfig | SwarmWorkflowConfig:
         """Return the workflow's config from ``warp/workflows/{name}.yml``.
@@ -112,27 +118,25 @@ class FileConfigSource:
         """Enumerate agents (``warp/agents/{name}/``) and workflows (``warp/workflows/*.yml``).
 
         Kind is inferred from *where* the definition lives — the one place that
-        inference is allowed to live (this adapter), not the call site. Descriptions
-        are read best-effort: a malformed definition yields an empty string rather
-        than breaking discovery. ``bidi`` agents are not yet distinguished here.
+        inference is allowed to live (this adapter), not the call site. Each agent is
+        read once, from its *effective* config (``app.yml`` ``defaults`` applied), so
+        ``kind``, ``description`` and ``labels`` match what :meth:`get_agent_config`
+        returns. Reads are best-effort: a malformed definition is reported as a plain
+        agent with an empty description and no labels rather than breaking discovery.
         """
         targets: list[TargetInfo] = []
 
         agents_dir = self._ws.agents_dir
         if agents_dir.is_dir():
+            app_config = self._best_effort_app_config()
             for entry in sorted(p for p in agents_dir.iterdir() if p.is_dir()):
                 if self._ws.agent(entry.name).yaml_file.exists():
-                    kind = self._agent_kind(entry.name)
-                    targets.append(
-                        TargetInfo(entry.name, kind, self._safe_description("agent", entry.name))
-                    )
+                    targets.append(self._agent_target(entry.name, app_config))
 
         workflows_dir = self._ws.workflows_dir
         if workflows_dir.is_dir():
             for wf in sorted(workflows_dir.glob("*.yml")):
-                targets.append(
-                    TargetInfo(wf.stem, "workflow", self._safe_description("workflow", wf.stem))
-                )
+                targets.append(self._workflow_target(wf.stem))
 
         return targets
 
@@ -187,15 +191,28 @@ class FileConfigSource:
             logger.debug("Could not read kind for agent '%s'", name, exc_info=True)
             return "agent"
 
-    def _safe_description(self, kind: TargetKind, name: str) -> str:
-        """Read a target's description best-effort (empty string on any error)."""
+    def _best_effort_app_config(self) -> AppConfig:
         try:
-            if kind == "workflow":
-                return get_workflow_config(self._ws.workflow_file(name)).description or ""
-            return get_agent_config(self._ws.agent(name).yaml_file).description or ""
+            return self.get_app_config()
+        except Exception:  # noqa: BLE001 — discovery must not break on a bad app.yml
+            logger.debug("Could not read app config for discovery", exc_info=True)
+            return AppConfig()
+
+    def _agent_target(self, name: str, app_config: AppConfig) -> TargetInfo:
+        try:
+            cfg = self._effective_agent_config(name, app_config)
         except Exception:  # noqa: BLE001 — discovery must not break on one bad config
-            logger.debug("Could not read description for %s '%s'", kind, name, exc_info=True)
-            return ""
+            logger.debug("Could not read agent '%s' for discovery", name, exc_info=True)
+            return TargetInfo(name, "agent")
+        return TargetInfo(name, cfg.kind, cfg.description or "", cfg.labels)
+
+    def _workflow_target(self, name: str) -> TargetInfo:
+        try:
+            cfg = get_workflow_config(self._ws.workflow_file(name))
+        except Exception:  # noqa: BLE001 — discovery must not break on one bad config
+            logger.debug("Could not read workflow '%s' for discovery", name, exc_info=True)
+            return TargetInfo(name, "workflow")
+        return TargetInfo(name, "workflow", cfg.description or "", cfg.labels)
 
     def _hydrate(self, agent_config: AgentConfig, name: str) -> AgentConfig:
         """Resolve declarative file/dir assets to literal content.
