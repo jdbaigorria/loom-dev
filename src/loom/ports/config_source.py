@@ -64,11 +64,13 @@ class ConfigSource(Protocol):
         ...
 
     def list_targets(self) -> list[TargetInfo]:
-        """Return every buildable target (name + kind + description).
+        """Return every buildable target (name + kind + description + labels).
 
         The discovery contract: the caller (backend/harness) learns *what exists*
         and *of which kind* without importing or hard-coding anything. ``kind`` is
-        the source's own property, not inferred at the call site.
+        the source's own property, not inferred at the call site. Each
+        ``TargetInfo.labels`` must be the labels of the target's *effective* config,
+        i.e. what the source's ``get_agent_config`` returns for it.
         """
         ...
 

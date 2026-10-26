@@ -10,7 +10,7 @@ from loom import (
     build_agent,       # by name: build_agent(name, session) -> strands.Agent
     build_workflow,    # by name: build_workflow(name, session) -> (Graph/Swarm, node_agents)
     discover,          # catalog: discover() -> list[TargetInfo]
-    TargetInfo,        # a buildable target (name, kind, description)
+    TargetInfo,        # a buildable target (name, kind, description, labels)
     LoomSession,       # execution identity (session_id, user_id)
 )
 from loom_evals import LoomEvals   # evaluation runner — package loom-declarative-evals
@@ -136,8 +136,10 @@ def discover(source: ConfigSource | None = None) -> list[TargetInfo]: ...
 ```python
 from loom import TargetInfo
 
-TargetInfo(name: str, kind: Literal["agent", "workflow", "bidi"], description: str = "")
+TargetInfo(name: str, kind: Literal["agent", "workflow", "bidi"], description: str = "", labels: Mapping[str, ...] = {})
 ```
+
+`labels` are the `labels:` of the target's effective config (`app.yml` `defaults` applied), the same values `get_agent_config(name).labels` returns. They are read-only and list values arrive as tuples. Loom does not interpret or filter on them.
 
 Selecting *which* target to run for a given request (routing, intent classification, ...) is execution-time policy for your backend — Loom's job stops at the catalog.
 

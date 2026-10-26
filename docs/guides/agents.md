@@ -242,6 +242,26 @@ print(run.response.answer, run.response.metadata.total_tokens)
 !!! tip
     `run_dev` always tears the target down after one turn, so it cannot hold a paused interrupt open across calls (the response may still *report* pending interrupts in `.interrupts`). Reach for `build_agent` directly when you need to answer them across separate calls.
 
+## Labels and routing
+
+Declare product metadata in `labels:` and read it back through discovery. Loom reports labels and never interprets them, so the meaning of each key is yours:
+
+```yaml title="warp/agents/billing/config/billing.yml"
+name: billing
+description: Facturación y pagos
+labels:
+  areas: [BILLING, BACKOFFICE]
+  expose_metrics: true
+```
+
+```python
+import loom
+
+by_area = {a: t.name for t in loom.discover() for a in t.labels.get("areas", ())}
+```
+
+Adding an agent is then just adding its folder: the router is built from the catalog. Selecting a target by label at request time (`by_label`) is the harness's job, not Loom's. See [`labels`](../reference/agent-yaml.md#labels) for the key rules and merge behaviour.
+
 ## Listing and managing agents
 
 ```bash
