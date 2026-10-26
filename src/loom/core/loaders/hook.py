@@ -33,6 +33,22 @@ REGISTRY: dict[str, str] = {
 }
 
 
+def _require_provider_class(obj: object, name: str) -> type:
+    """Return ``obj`` if it is a class with ``register_hooks``, else raise.
+
+    Hooks are Strands ``HookProvider`` classes. Without this check a function
+    reference would be *called* with no arguments and fail with an unrelated error.
+    """
+    if isinstance(obj, type) and hasattr(obj, "register_hooks"):
+        return obj
+    got = "a function" if callable(obj) else type(obj).__name__
+    raise HookLoadError(
+        f"Hook '{name}' is not a HookProvider class.",
+        tip=f"Hooks must be HookProvider classes with 'register_hooks'; got {got}. "
+        "See docs/guides/hooks.md.",
+    )
+
+
 def _load_hook(hook_def: HookConfig, hooks_dir: Path | None) -> HookProvider:
     """Load and instantiate a single hook.
 
@@ -55,7 +71,9 @@ def _load_hook(hook_def: HookConfig, hooks_dir: Path | None) -> HookProvider:
     if name in REGISTRY:
         logger.debug("Loading built-in hook '%s' from '%s'", name, REGISTRY[name])
         try:
-            hook_class = import_class_from_dotted_path(REGISTRY[name])
+            hook_class = _require_provider_class(
+                import_class_from_dotted_path(REGISTRY[name]), name
+            )
             hook_instance = hook_class(**params) if params else hook_class()
             logger.debug(
                 "Hook '%s' instantiated with params=%s", name, list(params.keys()) if params else []
@@ -71,7 +89,7 @@ def _load_hook(hook_def: HookConfig, hooks_dir: Path | None) -> HookProvider:
     if ":" in name or "." in name:
         logger.debug("Loading hook via qualified import: '%s'", name)
         try:
-            hook_class = cast(type, import_attr(name))
+            hook_class = _require_provider_class(import_attr(name), name)
             hook_instance = hook_class(**params) if params else hook_class()
             logger.debug(
                 "Hook '%s' instantiated with params=%s", name, list(params.keys()) if params else []
@@ -106,7 +124,7 @@ def _load_hook(hook_def: HookConfig, hooks_dir: Path | None) -> HookProvider:
         # Convention: PascalCase class derived from the filename
         class_name = name.title().replace("_", "")
         if hasattr(module, class_name):
-            hook_class = getattr(module, class_name)
+            hook_class = _require_provider_class(getattr(module, class_name), name)
             try:
                 hook_instance = hook_class(**params) if params else hook_class()
                 logger.debug(

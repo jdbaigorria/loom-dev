@@ -41,7 +41,7 @@ tools:
 
 # Hooks (optional)
 hooks:
-  - log_invocation
+  - logging
   - my_pkg.hooks.audit_logger
   - my_hook: { param: value }
 
@@ -156,7 +156,7 @@ List of tool names. Each entry can be:
 **Default:** `null`
 
 List of hook names. Each entry can be:
-- A string: built-in name or `my_pkg.module.hook_func`
+- A string: built-in name (`logging`, `tool_tracker`, `rate_limit`), a file in `warp/hooks/`, or `my_pkg.module.ClassName` / `my_pkg.module:ClassName` (a `HookProvider` class, not a function)
 - A single-key dict with params: `{ my_hook: { key: value } }`
 
 ### output
