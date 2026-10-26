@@ -41,7 +41,7 @@ tools:
 
 # Hooks (optional)
 hooks:
-  - log_invocation           # built-in or warp/hooks/log_invocation.py
+  - logging                  # built-in, or warp/hooks/<name>.py
 
 # Structured output (optional)
 output: my_pkg.schemas.OrderResponse   # dotted import path to a Pydantic model
@@ -124,11 +124,11 @@ See [Tools](tools.md) for shared tools, MCP servers, and tool parameters.
 
 ## Hooks
 
-Hooks run before and after each agent invocation. Declare them by name:
+Hooks are `HookProvider` classes that react to agent lifecycle events. Declare them by name:
 
 ```yaml
 hooks:
-  - log_invocation      # built-in
+  - logging             # built-in
   - my_custom_hook      # warp/hooks/my_custom_hook.py
   - audit_logger: { destination: s3 }  # with parameters
 ```
@@ -192,7 +192,7 @@ defaults:
   model: economic
   retry: low
   hooks:
-    - log_invocation
+    - logging
 ```
 
 ## Running an agent (Python)

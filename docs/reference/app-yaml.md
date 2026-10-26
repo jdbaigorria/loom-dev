@@ -31,7 +31,7 @@ defaults:
   model: economic
   retry: low
   hooks:
-    - log_invocation
+    - logging
 
 # OpenTelemetry (optional)
 telemetry:
@@ -175,7 +175,7 @@ defaults:
   retry: low
   conversation: sliding
   hooks:
-    - log_invocation
+    - logging
 ```
 
 ### telemetry
