@@ -77,6 +77,19 @@ result2 = agent2("And what about the return policy?")
 
 For a *single* live process holding the conversation in memory across turns instead, skip session persistence and just reuse the same built `agent` — see [Conversation management](conversations.md).
 
+## One history per agent
+
+A session can hold several agents. Strands keys each one by `agent_id`, which Loom sets to the agent's `name`:
+
+```
+<session store>/session_<session_id>/
+└── agents/
+    ├── agent_billing/messages/…
+    └── agent_support/messages/…
+```
+
+So a backend that routes the same `session_id` to different agents, or a workflow whose nodes share a session, never mixes their conversations. To give an agent a different key, set `agent_id` in its YAML (see the [agent YAML reference](../reference/agent-yaml.md#agent_id)).
+
 ## Session ID conventions
 
 Use unique, stable identifiers for `session_id`:

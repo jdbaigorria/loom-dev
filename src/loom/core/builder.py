@@ -189,6 +189,8 @@ def build(
     # Params shared by both kinds. Bidi reuses every loader except the model
     # (a BidiModel) and omits conversation/structured-output/retry.
     shared_params = {
+        # Strands keys the session history by agent_id ("default" when omitted).
+        "agent_id": agent_config.agent_id or name,
         "model": model,
         "system_prompt": get_prompt(agent_config.system_prompt, base_path=config_dir)
         if agent_config.system_prompt
