@@ -263,6 +263,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Release wheels carried a stale version.** `pyproject.toml` stayed at `1.0.0rc1`,
+  so every tag up to `v1.0.0rc6` shipped `loom_declarative-1.0.0rc1` and installers
+  could not tell the releases apart. The release workflow now fails when the tag and
+  the package versions differ, and no longer attaches `dist/.gitignore` to the release.
+
 - **`loom agent validate` reported builtin/import tools as "not found".** The
   tool check always looked for a `{name}.py` on disk, ignoring `tool.source`, so a
   `builtin.kb` / `builtin.apicall` (or a dotted `module:fn` import) was flagged as
