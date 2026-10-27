@@ -101,6 +101,14 @@ tool_executor: concurrent   # or: sequential
 
 Human-readable description. Surfaced in catalog/discovery listings and used as the routing signal when the agent is wrapped as a tool (`Agent.as_tool`) — keep it accurate and specific.
 
+### agent_id
+
+**Default:** the agent's `name`
+
+Key of this agent's history inside a session. Strands stores each agent under `agents/agent_<agent_id>/`, so agents that share a `session_id` (a router switching agents between turns, workflow nodes) keep separate histories. Must be a single path segment: no `/` or `\`.
+
+Versions before this field left it unset, and every agent was stored as `default`. Set `agent_id: default` to keep reading those sessions.
+
 ### labels
 
 **Default:** `{}`
