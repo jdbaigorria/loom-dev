@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 
 from .background import BackgroundTasksConfig
 from .conversations import ConversationConfig
@@ -30,6 +30,9 @@ class AgentConfig(StrictConfig):
     # and omits conversation/structured-output/retry. Gated by capability + extra.
     kind: Literal["agent", "bidi"] = "agent"
     description: str = "Agent created by Loom"
+    # Key of this agent's history inside a session (Strands ``agent_id``). None → ``name``,
+    # so agents sharing a session_id never read or overwrite each other's messages.
+    agent_id: str | None = None
     # Product-owned catalog metadata. Loom reports it in discovery, never reads it.
     labels: dict[LabelKey, LabelValue] = Field(default_factory=dict)
     system_prompt: PromptConfig = PromptConfig(prompt="prompt.md")
@@ -89,6 +92,18 @@ class AgentConfig(StrictConfig):
             if not isinstance(self.model, CustomModelConfig):
                 raise ValueError("model fallback is not supported when kind is 'bidi'.")
         return self
+
+    @field_validator("agent_id")
+    @classmethod
+    def _agent_id_is_one_path_segment(cls, value: str | None) -> str | None:
+        # Strands uses the id as a directory name and rejects separators at build time;
+        # fail at load time instead, with the field name in the error. Both separators
+        # are rejected so a YAML valid on Linux stays valid on Windows.
+        if value is not None and (
+            not value or value in (".", "..") or "/" in value or "\\" in value
+        ):
+            raise ValueError(f"agent_id must be a single path segment, got {value!r}.")
+        return value
 
     @model_validator(mode="after")
     def _aux_model_is_a_single_model(self):

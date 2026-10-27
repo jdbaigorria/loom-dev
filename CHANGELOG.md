@@ -37,6 +37,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking: `agent_id` defaults to the agent's name.** Loom used to leave it unset,
+  so every agent was Strands' `default` and all agents on one `session_id` shared
+  `agents/agent_default/`: switching agents on a session inherited the previous
+  agent's history, and two agents alive on one session (workflow nodes) overwrote
+  each other's message files. Each agent now keeps its own history. The new
+  `agent_id` field overrides the key; set `agent_id: default` to keep reading
+  sessions stored by earlier versions.
+
 - **Hooks must be `HookProvider` classes.** A hook reference that resolves to a function
   now raises `HookLoadError` instead of being called. The hooks guide was rewritten to
   match the loader; `defaults.hooks` are replaced, not appended, by agent `hooks`.
