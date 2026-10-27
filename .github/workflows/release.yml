@@ -33,6 +33,16 @@ jobs:
         with:
           python-version: "3.14"
 
+      - name: Check tag matches package versions
+        # The wheel filename and metadata come from pyproject, not from the tag: a
+        # stale version ships every tag as the same release (v1.0.0rc6 shipped 1.0.0rc1).
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          for f in pyproject.toml packages/loom-evals/pyproject.toml; do
+            v=$(sed -n 's/^version = "\(.*\)"$/\1/p' "$f")
+            [ "$v" = "$tag" ] || { echo "::error::$f has version $v, tag is $GITHUB_REF_NAME"; exit 1; }
+          done
+
       - name: Build package
         run: uv build --all-packages
 
@@ -51,4 +61,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: dist/*
+          # Not dist/*: uv writes a dist/.gitignore, which GitHub would attach as default.gitignore.
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
