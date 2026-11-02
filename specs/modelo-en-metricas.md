@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Estado** | Propuesta |
+| **Estado** | Implementada (rama `feat/model-in-metrics`) |
 | **Fecha** | 2026-11-02 |
 | **Origen** | HostOrg (`host-agentics`): con las métricas de L5 se ve cuánto tarda cada agente, pero no qué modelo ni con qué configuración. Al cambiar el modelo o un parámetro, el antes y el después quedan mezclados bajo el mismo `agent`. |
 | **Depende de** | L2 (`TurnMetrics`) y L5 (hook `metrics`) de [`observabilidad-del-turno.md`](observabilidad-del-turno.md) y [`hook-de-metricas.md`](hook-de-metricas.md) |
