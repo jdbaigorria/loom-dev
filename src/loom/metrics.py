@@ -77,6 +77,19 @@ class TurnMetrics(_Frozen):
     tool_errors: dict[str, int] = {}
 
 
+class TurnContext(_Frozen):
+    """What a metrics sink needs besides the numbers. No content, no ``invocation_state``.
+
+    ``outcome`` is ``"error"`` when the invocation produced no ``AgentResult``.
+    """
+
+    agent: str
+    session_id: str | None = None
+    user_id: str | None = None
+    outcome: Literal["ok", "error"]
+    stop_reason: str | None = None
+
+
 def turn_metrics(summary: dict[str, Any], *, since_trace: int = 0) -> TurnMetrics:
     """Project a Strands ``get_summary()`` onto one turn.
 

@@ -98,6 +98,37 @@ hooks:
 | `logging` | none | Logs the start and end of each invocation, with the stop reason. |
 | `tool_tracker` | none | Logs each tool call and whether it completed or failed. |
 | `rate_limit` | `max_calls` (default `20`) | Cancels tool calls once the per-invocation limit is exceeded. |
+| `metrics` | `sink`, `include`, `namespace`, `service`, `enabled` | Hands each turn's `TurnMetrics` to a sink: a log line, EMF to stdout, or your function. Failed turns too. See [Observability → Metrics hook](observability.md#metrics-hook). |
+
+## Hooks that need the session
+
+Strands events do not carry the `LoomSession`. A hook that defines `loom_bind` receives the agent name and the session once, when the agent is built (built-ins included — `metrics` uses it):
+
+```python title="warp/hooks/session_audit.py"
+import logging
+
+from strands.hooks import AfterInvocationEvent, HookProvider
+
+logger = logging.getLogger(__name__)
+
+
+class SessionAudit(HookProvider):
+    def __init__(self) -> None:
+        self.agent = None
+        self.session = None
+
+    def loom_bind(self, *, agent, session) -> None:
+        self.agent = agent
+        self.session = session
+
+    def register_hooks(self, registry, **kwargs):
+        registry.add_callback(AfterInvocationEvent, self._after)
+
+    def _after(self, event: AfterInvocationEvent) -> None:
+        logger.info("agent=%s session=%s ok=%s", self.agent, self.session.session_id, event.result is not None)
+```
+
+A hook built by hand (outside the builder) is never bound: handle `session` being `None`.
 
 ## App-level default hooks
 

@@ -8,4 +8,5 @@ Built-ins disponibles:
 - ``logging``     → ``LoggingHook``      — loguea inicio/fin de cada invocación.
 - ``tool_tracker`` → ``ToolTrackerHook`` — loguea cada tool call con nombre y resultado.
 - ``rate_limit``  → ``RateLimitHook``    — cancela tool calls cuando se supera el límite.
+- ``metrics``     → ``MetricsHook``      — entrega el ``TurnMetrics`` de cada turno a un sink (log, EMF o función).
 """

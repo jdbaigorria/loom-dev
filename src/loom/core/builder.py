@@ -31,6 +31,7 @@ from loom.adapters import strands as sx
 from loom.adapters.config import FileConfigSource
 from loom.adapters.strands import Agent, capabilities
 from loom.core.exceptions import AgentConfigError, ToolSelectionError
+from loom.hooks.metrics import MetricsHook
 from loom.ports import ConfigSource
 from loom.schemas.config.agent import AgentConfig
 from loom.schemas.config.app import AppConfig
@@ -42,7 +43,7 @@ from .loaders.app import resolve_env
 from .loaders.background import get_background_tasks
 from .loaders.context import conversation_is_none, get_context
 from .loaders.conversation import get_conversation_manager
-from .loaders.hook import get_hooks
+from .loaders.hook import bind_hooks, get_hooks
 from .loaders.intervention import get_interventions
 from .loaders.mcp import get_mcp_clients
 from .loaders.memory import get_memory
@@ -169,6 +170,14 @@ def build(
 
     model = get_model(agent_config.model, model_params) if agent_config.model else None
     hooks = get_hooks(agent_config.hooks, hooks_dir) if agent_config.hooks else None
+    if hooks:
+        if agent_config.kind == "bidi" and any(isinstance(h, MetricsHook) for h in hooks):
+            raise AgentConfigError(
+                "The metrics hook is not supported when kind is 'bidi'.",
+                tip="A full-duplex session has no invocation events. Remove 'metrics' from hooks, "
+                "or run this agent with kind: agent.",
+            )
+        bind_hooks(hooks, agent=name, session=session)
     trace = None
     if sx.ModelRouter is not None and isinstance(model, sx.ModelRouter):
         trace = RoutingTraceHook()
