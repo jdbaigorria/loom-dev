@@ -15,12 +15,14 @@ directly to the ``hooks=`` parameter of ``strands.Agent``.
 
 import inspect
 import logging
+from collections.abc import Iterable
 from pathlib import Path
-from typing import cast
+from typing import Protocol, cast, runtime_checkable
 
 from loom.adapters.strands import HookProvider
 from loom.core.exceptions import HookLoadError
 from loom.schemas.config.hook import HookConfig
+from loom.schemas.context import LoomSession
 from loom.utils.loaders import import_attr, import_class_from_dotted_path, import_module_from_file
 
 logger = logging.getLogger(__name__)
@@ -30,7 +32,27 @@ REGISTRY: dict[str, str] = {
     "logging": "loom.hooks.logging_hook.LoggingHook",
     "tool_tracker": "loom.hooks.tool_tracker.ToolTrackerHook",
     "rate_limit": "loom.hooks.rate_limit.RateLimitHook",
+    "metrics": "loom.hooks.metrics.MetricsHook",
 }
+
+
+@runtime_checkable
+class SessionAwareHook(Protocol):
+    """A hook that wants the agent name and session it was built for.
+
+    The builder calls ``loom_bind`` once per build, after loading the hooks. Strands
+    events do not carry the ``LoomSession``; this is how a hook gets it without reading
+    ``invocation_state``.
+    """
+
+    def loom_bind(self, *, agent: str, session: LoomSession) -> None: ...
+
+
+def bind_hooks(hooks: Iterable[object], *, agent: str, session: LoomSession) -> None:
+    """Call ``loom_bind`` on every loaded hook that implements :class:`SessionAwareHook`."""
+    for hook in hooks:
+        if isinstance(hook, SessionAwareHook):
+            hook.loom_bind(agent=agent, session=session)
 
 
 def _require_provider_class(obj: object, name: str) -> type:
