@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Turn metrics (`loom.metrics`).** `turn_metrics(get_summary(), since_trace=0)` returns
+  a frozen `TurnMetrics`: cycles with their model and tool calls, model/tools/other ms,
+  this invocation's token usage and tool errors. `AgentResponseMetadata.turn` carries it;
+  `run_and_record` measures only the turn on a reused agent. It never holds message text
+  or tool arguments.
+- **Built-in `metrics` hook.** Hands each turn's `TurnMetrics` and a `TurnContext` to a
+  sink: `log` (an INFO line on `loom.metrics`), `emf` (CloudWatch Embedded Metric Format
+  to stdout, no AWS SDK) or a `module:function`. Reports failed turns too. `kind: bidi`
+  rejects it.
+- **`loom_bind` for hooks.** A hook that defines `loom_bind(*, agent, session)` gets the
+  agent name and `LoomSession` once per build.
 - **Catalog `labels`.** Agents and workflows can declare flat `labels:` (scalars or
   lists of scalars, keys like `areas` or `acme.tier`). `TargetInfo.labels` reports
   them from the effective config, so `app.yml` `defaults.labels` apply. Loom does not

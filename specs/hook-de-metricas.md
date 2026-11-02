@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Estado** | Propuesta |
+| **Estado** | Implementada (rama `feat/turn-metrics`) |
 | **Fecha** | 2026-11-02 |
 | **Origen** | HostOrg (`host-agentics`): `serverless-app/.docs/spec-metricas-hook.md` publica métricas desde un hook propio; nada de ese hook es de HostOrg salvo el destino |
 | **Depende de** | L2 (`TurnMetrics`) de [`observabilidad-del-turno.md`](observabilidad-del-turno.md) |
@@ -72,10 +72,10 @@ defaults:
 | Parámetro | Tipo | Default | Qué hace |
 |---|---|---|---|
 | `sink` | `"log"` \| `"emf"` \| `"modulo:funcion"` | `"log"` | Destino de cada `TurnMetrics` |
-| `include` | lista de `invocation`, `breakdown`, `tools` | las tres | Qué grupos de métricas se emiten (ver tabla) |
+| `include` | lista de `invocation`, `breakdown`, `tools` | las tres | Solo `emf`: qué grupos se emiten (ver tabla); con otro sink, `HookLoadError` |
 | `namespace` | `str` | — | Obligatorio con `sink: emf`; con otro sink, `HookLoadError` si se pasa |
 | `service` | `str \| None` | `None` | Solo `emf`: dimensión `service` y propiedad |
-| `enabled` | `bool` | `True` | `False` registra el hook sin callbacks (costo cero) |
+| `enabled` | `bool` o string (`true`/`false`/`1`/`0`/`yes`/`no`/`on`/`off`) | `True` | `False` registra el hook sin callbacks (costo cero). Acepta strings porque `${oc.env:...}` devuelve strings |
 
 Un parámetro desconocido o un `sink` que no importa da `HookLoadError` al construir, como cualquier hook hoy.
 
@@ -165,7 +165,15 @@ Con W8 configurado, `include` no debería llevar `invocation`: los tokens se con
 - **Se pierde si un agente declara `hooks` propios.** `defaults` se mezcla con `OmegaConf.merge`, y las listas se reemplazan, no se suman ([file_source.py:91-101](../src/loom/adapters/config/file_source.py#L91-L101)). Un agente con `hooks: [rate_limit]` pierde el `metrics` de `defaults` sin aviso. Esta spec no cambia la regla de merge; lo documenta en `hooks.md` y en el ejemplo pone `metrics` repetido en el agente que suma hooks.
 - **Workflow:** una emisión por nodo, con `agent` = nombre del nodo.
 
-### A verificar al implementar
+### Resuelto al implementar
+
+- **Bidi:** `metrics` en un agente `kind: bidi` da `AgentConfigError` al construir.
+- **`SessionAwareHook`** vive en `loom.core.loaders.hook` junto con `bind_hooks`, que el builder llama después de `get_hooks`. Es un `Protocol` `runtime_checkable`: cualquier hook con `loom_bind` lo recibe.
+- **Cancelación por hook:** no se distingue. Queda documentada como limitación (se reporta como `error`).
+- **L4:** no está implementado; cuando exista, ver si comparte el cálculo con este hook.
+- **`include` y `enabled`:** ver la tabla de parámetros (solo `emf`; strings aceptados).
+
+### A verificar al implementar (texto original)
 
 - **Bidi:** `BidiAgent` recibe `hooks` ([builder.py:191-206](../src/loom/core/builder.py#L191-L206)) pero sus eventos no son `Before/AfterInvocationEvent`. Propuesta: `metrics` en un agente `kind: bidi` da `AgentConfigError` al construir, como `trace_attributes`.
 - **Cancelación por hook:** `BeforeInvocationEvent.cancel` termina con `AfterInvocationEvent` sin `result` (`strands/agent/agent.py:1654` en 1.62), que este hook contaría como `error`. Confirmar si se puede distinguir (por ejemplo, `cancel` en el evento previo) y si vale un `outcome="cancelled"`.

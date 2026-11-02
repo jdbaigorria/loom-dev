@@ -80,7 +80,8 @@ class ModelCall(BaseModel, frozen=True):
     total_ms: int                # reloj de la traza stream_messages
     latency_ms: int | None       # message.metadata.metrics.latencyMs (Bedrock)
     first_token_ms: int | None   # message.metadata.metrics.timeToFirstByteMs
-    stop_reason: str | None
+    # stop_reason: no se implementó — Strands no lo guarda en la traza stream_messages;
+    # el final está en AgentResult (y en TurnContext de L5).
 
 class ToolCall(BaseModel, frozen=True):
     tool_use_id: str
