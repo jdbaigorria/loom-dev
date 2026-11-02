@@ -2,6 +2,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from loom.metrics import TurnMetrics
+
 
 class InterruptInfo(BaseModel):
     """A pending human-in-the-loop interrupt raised by a tool during execution.
@@ -28,7 +30,10 @@ class AgentResponseMetadata(BaseModel):
     model_id: str | None = None
     model_attempts: list[dict] = Field(default_factory=list)
     tool_calls: list[str] = Field(default_factory=list)
+    # Strands' summary verbatim — accumulated over every turn the agent instance ran.
     raw_metrics: dict | None = None
+    # This turn only (``loom.metrics``): cycles, model/tools/other ms, usage.
+    turn: TurnMetrics | None = None
 
 
 class AgentResponse(BaseModel):

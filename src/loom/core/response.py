@@ -14,6 +14,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from loom.core.paths import build_workspace_paths
+from loom.metrics import turn_metrics
 from loom.schemas.context import LoomSession
 from loom.schemas.response import AgentResponse, AgentResponseMetadata, InterruptInfo
 
@@ -60,8 +61,13 @@ def build_metadata(
     model_id: str | None,
     user_msg_idx: int,
     assistant_msg_idx: int,
+    since_trace: int = 0,
 ) -> AgentResponseMetadata:
-    """Extract token counts, latency and tool usage from the result into metadata."""
+    """Extract token counts, latency and tool usage from the result into metadata.
+
+    ``since_trace`` is the trace count before this turn (see :func:`loom.metrics.turn_metrics`);
+    it only affects ``turn`` — the other fields keep Strands' accumulated summary.
+    """
     raw_metrics = result.metrics.get_summary() or {}
     usage = raw_metrics.get("accumulated_usage", {})
 
@@ -77,6 +83,7 @@ def build_metadata(
         tool_calls=list[str](raw_metrics.get("tool_usage", {}).keys()),
         model_id=model_id,
         raw_metrics=raw_metrics,
+        turn=turn_metrics(raw_metrics, since_trace=since_trace),
     )
 
 
@@ -87,6 +94,7 @@ def build_response(
     model_id: str | None,
     user_msg_idx: int,
     assistant_msg_idx: int,
+    since_trace: int = 0,
 ) -> AgentResponse:
     """Assemble an ``AgentResponse`` (answer + metadata + interrupts) from a result."""
     try:
@@ -108,6 +116,7 @@ def build_response(
         model_id=model_id,
         user_msg_idx=user_msg_idx,
         assistant_msg_idx=assistant_msg_idx,
+        since_trace=since_trace,
     )
     return AgentResponse(
         answer=answer,
@@ -165,6 +174,7 @@ def run_and_record(
         keep it alive for ``resume`` or tear it down).
     """
     user_msg_idx = len(agent.messages)
+    since_trace = len(agent.event_loop_metrics.traces)
     result = agent(agent_input, invocation_state=invocation_state or {})
     interrupted = bool(getattr(result, "interrupts", None))
     assistant_msg_idx = len(agent.messages) - 1
@@ -182,6 +192,7 @@ def run_and_record(
         model_id=model_id,
         user_msg_idx=user_msg_idx,
         assistant_msg_idx=assistant_msg_idx,
+        since_trace=since_trace,
     )
     if attempts:
         response.metadata.model_attempts = attempts

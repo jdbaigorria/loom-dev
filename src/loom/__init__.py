@@ -21,6 +21,8 @@ Public surface::
         TargetInfo,       # a buildable target (name, kind, description)
         LoomEvals,        # evaluation runner (lazy — needs the [evals] extra)
         LoomSession,      # execution identity (session_id, user_id)
+        TurnMetrics,      # one turn's cost: cycles, model/tools/other ms, usage
+        turn_metrics,     # turn_metrics(get_summary(), since_trace=0) -> TurnMetrics
     )
     from loom.dev import run_dev   # dev-only executor (agent or workflow)
     from loom.errors import LoomError, AgentNotFoundError, ...   # public exception surface
@@ -44,6 +46,7 @@ from typing import TYPE_CHECKING
 
 from loom.core.builder import build, build_agent
 from loom.core.workflow_builder import build_workflow
+from loom.metrics import TurnMetrics, turn_metrics, turn_metrics_of
 from loom.schemas.context import LoomSession
 from loom.schemas.target import TargetInfo
 
@@ -55,10 +58,13 @@ __all__ = [
     "LoomEvals",
     "LoomSession",
     "TargetInfo",
+    "TurnMetrics",
     "build",
     "build_agent",
     "build_workflow",
     "discover",
+    "turn_metrics",
+    "turn_metrics_of",
 ]
 
 
