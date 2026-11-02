@@ -77,6 +77,37 @@ class TurnMetrics(_Frozen):
     tool_errors: dict[str, int] = {}
 
 
+class ModelSettings(_Frozen):
+    """The model configuration that is safe and useful to publish — a whitelist.
+
+    Names are normalized across providers (``effort`` is Bedrock's
+    ``output_config.effort``, OpenAI's ``reasoning_effort`` and Nova's
+    ``maxReasoningEffort``). ``None`` means "not set": the provider default applies.
+    Anything not listed here (credentials, ``stop_sequences``, guardrail ids, any other
+    ``params`` or ``additional_request_fields``) is never read.
+    """
+
+    max_tokens: int | None = None
+    temperature: float | None = None
+    top_p: float | None = None
+    top_k: int | None = None
+    streaming: bool | None = None
+    effort: str | None = None
+    thinking: str | None = None
+    thinking_budget: int | None = None
+    service_tier: str | None = None
+    prompt_cache: bool | None = None
+    guardrail: bool | None = None
+
+
+class ModelDescription(_Frozen):
+    """Which model answered and with which settings. ``fallbacks``: failed router attempts."""
+
+    model_id: str | None = None
+    settings: ModelSettings = ModelSettings()
+    fallbacks: int = 0
+
+
 class TurnContext(_Frozen):
     """What a metrics sink needs besides the numbers. No content, no ``invocation_state``.
 
@@ -88,6 +119,135 @@ class TurnContext(_Frozen):
     user_id: str | None = None
     outcome: Literal["ok", "error"]
     stop_reason: str | None = None
+    model_id: str | None = None
+    model_settings: ModelSettings | None = None
+    model_fallbacks: int = 0
+    variant: str | None = None
+
+
+VARIANT_LABEL = "metrics.variant"
+
+
+def describe_model(agent: Any) -> ModelDescription:
+    """The model that answered the agent's last turn, with its whitelisted settings.
+
+    With a model router (fallback / route) it is the candidate that answered, read from
+    Loom's routing trace, with that candidate's own settings. Never raises: anything
+    unexpected gives an empty ``ModelDescription``.
+    """
+    try:
+        model = getattr(agent, "model", None)
+        fallbacks = 0
+        trace = getattr(agent, "_loom_routing_trace", None)
+        if trace is not None:
+            answered = getattr(trace, "answered_model", None)
+            if answered is not None:
+                model = answered
+            fallbacks = _int(getattr(trace, "failed_attempts", 0)) or 0
+        if model is None:
+            return ModelDescription()
+        # A nested router contributes one candidate: describe its default model.
+        model = getattr(model, "default_model", None) or model
+        config = _config_of(model)
+        model_id = _str(config.get("model_id")) or _str(getattr(model, "model_id", None))
+        return ModelDescription(
+            model_id=model_id, settings=_settings(config, agent), fallbacks=fallbacks
+        )
+    except Exception:
+        return ModelDescription()
+
+
+def variant_of(agent: Any) -> str | None:
+    """The agent's ``metrics.variant`` label, for comparing two configurations of a model.
+
+    Only scalars count (``True`` → ``"true"``); a list gives ``None``.
+    """
+    labels = getattr(agent, "_loom_labels", None)
+    value = labels.get(VARIANT_LABEL) if isinstance(labels, dict) else None
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (str, int, float)):
+        return str(value)
+    return None
+
+
+def _config_of(model: Any) -> dict[str, Any]:
+    get_config = getattr(model, "get_config", None)
+    config = get_config() if callable(get_config) else getattr(model, "config", None)
+    return config if isinstance(config, dict) else {}
+
+
+def _settings(config: dict[str, Any], agent: Any) -> ModelSettings:
+    params = _dict(config.get("params"))
+    extra = _dict(config.get("additional_request_fields"))
+    output_config = _dict(extra.get("output_config"))
+    thinking = _dict(extra.get("thinking"))
+    reasoning = _dict(extra.get("reasoningConfig"))
+    return ModelSettings(
+        max_tokens=_first(
+            _int,
+            config.get("max_tokens"),
+            params.get("max_tokens"),
+            params.get("max_completion_tokens"),
+        ),
+        temperature=_first(_float, config.get("temperature"), params.get("temperature")),
+        top_p=_first(_float, config.get("top_p"), params.get("top_p")),
+        top_k=_first(_int, extra.get("top_k"), params.get("top_k")),
+        streaming=_first(
+            _bool, config.get("streaming"), config.get("stream"), params.get("stream")
+        ),
+        effort=_first(
+            _str,
+            output_config.get("effort"),
+            params.get("reasoning_effort"),
+            reasoning.get("maxReasoningEffort"),
+        ),
+        thinking=_first(_str, thinking.get("type"), reasoning.get("type")),
+        thinking_budget=_first(_int, thinking.get("budget_tokens")),
+        service_tier=_first(_str, config.get("service_tier"), params.get("service_tier")),
+        prompt_cache=bool(
+            config.get("cache_config")
+            or config.get("cache_prompt")
+            or _has_cache_point(getattr(agent, "system_prompt_content", None))
+        ),
+        guardrail=bool(config.get("guardrail_id")),
+    )
+
+
+def _has_cache_point(blocks: Any) -> bool:
+    return isinstance(blocks, list) and any(
+        isinstance(block, dict) and "cachePoint" in block for block in blocks
+    )
+
+
+def _first(convert: Any, *values: Any) -> Any:
+    for value in values:
+        converted = convert(value)
+        if converted is not None:
+            return converted
+    return None
+
+
+def _dict(value: Any) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
+def _str(value: Any) -> str | None:
+    return value if isinstance(value, str) and value else None
+
+
+def _int(value: Any) -> int | None:
+    return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def _float(value: Any) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return float(value)
+
+
+def _bool(value: Any) -> bool | None:
+    return value if isinstance(value, bool) else None
 
 
 def turn_metrics(summary: dict[str, Any], *, since_trace: int = 0) -> TurnMetrics:

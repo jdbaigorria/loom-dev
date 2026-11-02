@@ -127,6 +127,7 @@ labels:
 - A list means "this target serves each of these values".
 - `workflows/*.yml` accept the same field.
 - `app.yml` `defaults.labels` merge in key by key; a list in the agent **replaces** the default list.
+- **One exception:** `metrics.variant` (a single value) is read by the `metrics` hook and by `loom.variant_of`: it names an experiment variant in the metrics. See [Observability → Model and variant](../guides/observability.md#model-and-variant).
 
 ### model
 

@@ -127,13 +127,37 @@ defaults:
 
 | Group | Dimensions | Metric | Unit |
 |---|---|---|---|
-| `invocation` | `agent` (+`service`) | `Invocations` (1), `InvocationErrors` (0/1), `InvocationDuration` | Count, Count, Milliseconds |
+| `invocation` | `agent` (+`service`); also by `model` and `variant` | `Invocations` (1), `InvocationErrors` (0/1), `InvocationDuration` | Count, Count, Milliseconds |
 | | | `InputTokens`, `OutputTokens`, `TotalTokens` — only on `ok` | Count |
-| `breakdown` | `agent` (+`service`) | `ModelDuration`, `ToolsDuration`, `OtherDuration` | Milliseconds |
+| `breakdown` | `agent` (+`service`); also by `model` and `variant` | `ModelDuration`, `ToolsDuration`, `OtherDuration` | Milliseconds |
 | | | `Cycles` | Count |
 | `tools` | `agent`, `tool` (+`service`) | `ToolDuration`, `ToolInvocations` (1), `ToolErrors` (0/1) — one line per call | Milliseconds, Count, Count |
 
 `session_id`, `user_id`, `outcome` and `stop_reason` travel on every line as properties, never as dimensions: each dimension combination is billed as a separate metric.
+
+### Model and variant
+
+The hook reports which model answered and with which settings, so a change of model or of a parameter does not blend into the agent's history.
+
+- **`model`** is a dimension: the `invocation` / `breakdown` line declares `["agent", "service"]` and also `["agent", "model", "service"]` (EMF allows several dimension sets on one line). The id goes as is (`us.anthropic.claude-haiku-5-5`): the cross-region prefix changes latency. With a `fallback` or `route` model it is the candidate that answered, and `model_fallbacks` counts the failed tries before it.
+- **`metrics.variant`** — a label on the agent (`labels: { metrics.variant: effort-low }`) — adds `["agent", "variant", "service"]`. Use it to compare two configurations of the same model; remove it when the experiment ends, since each value is one more series.
+- **`model_config`** is a property (never a dimension) with the whitelisted settings below, normalized across providers. Compare them in Logs Insights (`stats avg(ModelDuration) by model, model_config.effort`).
+
+Tool lines keep `["agent", "tool", "service"]` and carry `model`, `variant` and `model_config` as properties.
+
+| Setting | Bedrock | OpenAI / LiteLLM / Anthropic |
+|---|---|---|
+| `max_tokens` | `max_tokens` | `params.max_tokens`, `params.max_completion_tokens` |
+| `temperature`, `top_p` | same name | `params.*` |
+| `top_k` | `additional_request_fields.top_k` | `params.top_k` |
+| `streaming` | `streaming` | `stream`, `params.stream` |
+| `effort` | `additional_request_fields.output_config.effort`, `reasoningConfig.maxReasoningEffort` | `params.reasoning_effort` |
+| `thinking`, `thinking_budget` | `additional_request_fields.thinking.type` / `.budget_tokens`, `reasoningConfig.type` | — |
+| `service_tier` | `service_tier` | `params.service_tier` |
+| `prompt_cache` | `cache_config`, `cache_prompt`, or a `cachePoint` in the system prompt | `cache_config` |
+| `guardrail` | `true` when `guardrail_id` is set (never the id) | — |
+
+Anything else in the model config — credentials, `stop_sequences`, guardrail ids, any other `params` or `additional_request_fields` — is never read. A value of the wrong type is dropped, not converted. From Python: `loom.describe_model(agent)` and `loom.variant_of(agent)`.
 
 ### With a harness that also counts turns
 

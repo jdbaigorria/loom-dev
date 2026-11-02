@@ -23,6 +23,8 @@ Public surface::
         LoomSession,      # execution identity (session_id, user_id)
         TurnMetrics,      # one turn's cost: cycles, model/tools/other ms, usage
         turn_metrics,     # turn_metrics(get_summary(), since_trace=0) -> TurnMetrics
+        describe_model,   # describe_model(agent) -> ModelDescription(model_id, settings, fallbacks)
+        variant_of,       # variant_of(agent) -> the metrics.variant label
     )
     from loom.dev import run_dev   # dev-only executor (agent or workflow)
     from loom.errors import LoomError, AgentNotFoundError, ...   # public exception surface
@@ -46,7 +48,15 @@ from typing import TYPE_CHECKING
 
 from loom.core.builder import build, build_agent
 from loom.core.workflow_builder import build_workflow
-from loom.metrics import TurnMetrics, turn_metrics, turn_metrics_of
+from loom.metrics import (
+    ModelDescription,
+    ModelSettings,
+    TurnMetrics,
+    describe_model,
+    turn_metrics,
+    turn_metrics_of,
+    variant_of,
+)
 from loom.schemas.context import LoomSession
 from loom.schemas.target import TargetInfo
 
@@ -57,14 +67,18 @@ if TYPE_CHECKING:
 __all__ = [
     "LoomEvals",
     "LoomSession",
+    "ModelDescription",
+    "ModelSettings",
     "TargetInfo",
     "TurnMetrics",
     "build",
     "build_agent",
     "build_workflow",
+    "describe_model",
     "discover",
     "turn_metrics",
     "turn_metrics_of",
+    "variant_of",
 ]
 
 

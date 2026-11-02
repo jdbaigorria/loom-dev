@@ -32,6 +32,7 @@ from loom.adapters.config import FileConfigSource
 from loom.adapters.strands import Agent, capabilities
 from loom.core.exceptions import AgentConfigError, ToolSelectionError
 from loom.hooks.metrics import MetricsHook
+from loom.metrics import VARIANT_LABEL
 from loom.ports import ConfigSource
 from loom.schemas.config.agent import AgentConfig
 from loom.schemas.config.app import AppConfig
@@ -336,6 +337,16 @@ def build(
     )
     if trace is not None:
         agent._loom_routing_trace = trace
+    # Read by loom.metrics.variant_of (the metrics.variant label).
+    agent._loom_labels = dict(agent_config.labels)
+    variant = agent_config.labels.get(VARIANT_LABEL)
+    if variant is not None and not isinstance(variant, (str, int, float, bool)):
+        logger.warning(
+            "Agent '%s': label '%s' must be a single value, got %r; metrics will carry no variant.",
+            name,
+            VARIANT_LABEL,
+            variant,
+        )
 
     logger.info("Agent '%s' built successfully", name)
     return agent
