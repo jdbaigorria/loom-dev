@@ -1,6 +1,6 @@
 [project]
 name = "loom-declarative-evals"
-version = "1.0.0rc7"
+version = "1.0.0rc8"
 description = "Evaluation runner and `loom evals` CLI plugin for Loom"
 readme = "README.md"
 requires-python = ">=3.11"
