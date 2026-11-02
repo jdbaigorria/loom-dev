@@ -14,7 +14,7 @@ from loom.core.builder import build
 from loom.core.exceptions import AgentConfigError, HookLoadError
 from loom.core.loaders.hook import get_hooks
 from loom.hooks.metrics import MetricsHook
-from loom.metrics import TurnContext, TurnMetrics
+from loom.metrics import ModelSettings, TurnContext, TurnMetrics
 from loom.schemas.config.agent import AgentConfig
 from loom.schemas.config.app import AppConfig
 from loom.schemas.config.hook import HookConfig
@@ -96,7 +96,13 @@ class TestSinkCallable:
         assert isinstance(metrics, TurnMetrics)
         assert metrics.tool_errors == {"search": 1}
         assert context == TurnContext(
-            agent="support", session_id="s", user_id="u", outcome="ok", stop_reason="end_turn"
+            agent="support",
+            session_id="s",
+            user_id="u",
+            outcome="ok",
+            stop_reason="end_turn",
+            # The fake agent has no model: an empty description (L6).
+            model_settings=ModelSettings(),
         )
 
     def test_failed_turn_reports_what_ran(self, sink_module):

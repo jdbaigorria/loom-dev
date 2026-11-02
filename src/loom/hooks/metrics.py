@@ -34,7 +34,7 @@ from loom.adapters.strands import (
     HookRegistry,
 )
 from loom.core.exceptions import HookLoadError
-from loom.metrics import TurnContext, TurnMetrics, turn_metrics_of
+from loom.metrics import TurnContext, TurnMetrics, describe_model, turn_metrics_of, variant_of
 from loom.schemas.context import LoomSession
 from loom.utils.loaders import import_attr
 
@@ -99,12 +99,17 @@ class MetricsHook(HookProvider):
             metrics = turn_metrics_of(event.agent, since_trace=self._since or 0)
             result = event.result
             stop_reason = getattr(result, "stop_reason", None) if result is not None else None
+            model = describe_model(event.agent)
             context = TurnContext(
                 agent=self._agent or str(getattr(event.agent, "name", "") or "unknown"),
                 session_id=self._session.session_id if self._session else None,
                 user_id=self._session.user_id if self._session else None,
                 outcome="ok" if result is not None else "error",
                 stop_reason=str(stop_reason) if stop_reason is not None else None,
+                model_id=model.model_id,
+                model_settings=model.settings,
+                model_fallbacks=model.fallbacks,
+                variant=variant_of(event.agent),
             )
             self._send(metrics, context)
         except Exception:
@@ -168,8 +173,9 @@ def log_sink(metrics: TurnMetrics, context: TurnContext) -> None:
     if not turn_logger.isEnabledFor(logging.INFO):
         return
     turn_logger.info(
-        "turn agent=%s outcome=%s duration_ms=%d model_ms=%d tools_ms=%d cycles=%d tokens=%d",
+        "turn agent=%s model=%s outcome=%s duration_ms=%d model_ms=%d tools_ms=%d cycles=%d tokens=%d",
         context.agent,
+        context.model_id,
         context.outcome,
         metrics.duration_ms,
         metrics.model_ms,
@@ -193,16 +199,21 @@ class EmfSink:
         self.include = tuple(include)
 
     def __call__(self, metrics: TurnMetrics, context: TurnContext) -> None:
-        properties = {
+        properties: dict[str, Any] = {
             k: v
             for k, v in (
                 ("session_id", context.session_id),
                 ("user_id", context.user_id),
                 ("outcome", context.outcome),
                 ("stop_reason", context.stop_reason),
+                ("model", context.model_id),
+                ("variant", context.variant),
             )
             if v is not None
         }
+        if context.model_settings is not None:
+            properties["model_config"] = context.model_settings.model_dump(exclude_none=True)
+        properties["model_fallbacks"] = context.model_fallbacks
         turn: list[tuple[str, str, float]] = []
         if "invocation" in self.include:
             turn += [
@@ -226,12 +237,19 @@ class EmfSink:
                 ("Cycles", "Count", len(metrics.cycles)),
             ]
         if turn:
-            self._write(self._dimensions(agent=context.agent), turn, properties)
+            # One line, several aggregations: per agent (as before), per agent and model, and
+            # per agent and variant. Each extra set is one more series per metric.
+            sets = [self._dimensions(agent=context.agent)]
+            if context.model_id:
+                sets.append(self._dimensions(agent=context.agent, model=context.model_id))
+            if context.variant:
+                sets.append(self._dimensions(agent=context.agent, variant=context.variant))
+            self._write(sets, turn, properties)
         if "tools" in self.include:
             for cycle in metrics.cycles:
                 for call in cycle.tools:
                     self._write(
-                        self._dimensions(agent=context.agent, tool=call.name),
+                        [self._dimensions(agent=context.agent, tool=call.name)],
                         [
                             ("ToolDuration", "Milliseconds", call.elapsed_ms),
                             ("ToolInvocations", "Count", 1),
@@ -245,17 +263,19 @@ class EmfSink:
 
     def _write(
         self,
-        dimensions: dict[str, str],
+        dimension_sets: list[dict[str, str]],
         values: list[tuple[str, str, float]],
         properties: dict[str, Any],
     ) -> None:
+        # EMF needs every dimension's value at the root, once.
+        dimensions = {k: v for dims in dimension_sets for k, v in dims.items()}
         doc = {
             "_aws": {
                 "Timestamp": int(time.time() * 1000),
                 "CloudWatchMetrics": [
                     {
                         "Namespace": self.namespace,
-                        "Dimensions": [list(dimensions)],
+                        "Dimensions": [list(dims) for dims in dimension_sets],
                         "Metrics": [{"Name": name, "Unit": unit} for name, unit, _ in values],
                     }
                 ],

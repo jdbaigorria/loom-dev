@@ -37,6 +37,7 @@ Tres problemas que salieron de poner un agente en Lambda:
 | L3 | `run_and_record` mide solo el turno | L2 | Sí: `.loom/stats` deja de guardar números acumulados |
 | L4 | Puntos de debug del turno (`loom.turn`) | — | No |
 | L5 | Hook builtin `metrics` con `sink` — en [`hook-de-metricas.md`](hook-de-metricas.md) | L2 | No |
+| L6 | Modelo, configuración (lista blanca) y variante en las métricas — en [`modelo-en-metricas.md`](modelo-en-metricas.md) | L2, L5 | No |
 
 Orden: L1, L2, L3, L4. L1 y L4 son independientes de L2. L5 va después de L2.
 

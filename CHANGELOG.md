@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Model and variant in metrics.** `TurnContext` carries the model that answered
+  (`model_id`, the router's chosen candidate when there is one), `model_fallbacks`,
+  `model_settings` — a whitelist normalized across providers: `max_tokens`, `temperature`,
+  `top_p`, `top_k`, `streaming`, `effort`, `thinking`, `thinking_budget`, `service_tier`,
+  `prompt_cache`, `guardrail` — and `variant`, from the `metrics.variant` label. The
+  `emf` sink adds the `[agent, model]` and `[agent, variant]` dimension sets and a
+  `model_config` property. `loom.describe_model(agent)` and `loom.variant_of(agent)` are
+  public.
 - **Turn metrics (`loom.metrics`).** `turn_metrics(get_summary(), since_trace=0)` returns
   a frozen `TurnMetrics`: cycles with their model and tool calls, model/tools/other ms,
   this invocation's token usage and tool errors. `AgentResponseMetadata.turn` carries it;

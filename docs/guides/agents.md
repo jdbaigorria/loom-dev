@@ -244,7 +244,7 @@ print(run.response.answer, run.response.metadata.total_tokens)
 
 ## Labels and routing
 
-Declare product metadata in `labels:` and read it back through discovery. Loom reports labels and never interprets them, so the meaning of each key is yours:
+Declare product metadata in `labels:` and read it back through discovery. Loom reports labels and never interprets them — except `metrics.variant`, which the `metrics` hook publishes ([Observability](observability.md#model-and-variant)) — so the meaning of each key is yours:
 
 ```yaml title="warp/agents/billing/config/billing.yml"
 name: billing
