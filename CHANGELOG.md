@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`kb_sources` reads a `builtin.kb` result back.** `loom.builtins.kb_sources(content)`
+  gives the knowledge base, score, location type and document `uri` of each passage the
+  search returned, without the text, so the documents an agent consulted can be stored
+  without storing the passages. Content it does not recognize gives `[]`.
 - **Model and variant in metrics.** `TurnContext` carries the model that answered
   (`model_id`, the router's chosen candidate when there is one), `model_fallbacks`,
   `model_settings` — a whitelist normalized across providers: `max_tokens`, `temperature`,
