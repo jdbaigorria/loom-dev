@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from loom.builtins import BUILTIN_TOOLS, make_apicall, make_kb
+from loom.builtins import BUILTIN_TOOLS, kb_sources, make_apicall, make_kb
 from loom.builtins.apicall import _project
 from loom.core.exceptions import ToolLoadError
 from loom.core.loaders.tool import get_tools
@@ -531,6 +531,90 @@ class TestKb:
             make_kb(kb_ids=["docs"], region="us-east-1", boto_session=session)
         client_cls.assert_not_called()
         session.client.assert_called_once_with("bedrock-agent-runtime", region_name="us-east-1")
+
+
+class TestKbSources:
+    """kb_sources lee un resultado de la tool kb: kb, score y documento, sin el texto."""
+
+    def _search(self, *results, **kw):
+        client = MagicMock()
+        client.retrieve.side_effect = [_kb_response(*r) for r in results]
+        with patch("boto3.client", return_value=client):
+            tool = make_kb(**{"kb_ids": ["docs"], "score_threshold": 0.0, **kw})
+        return tool(query="q")
+
+    def test_round_trip_con_el_resultado_de_la_tool(self):
+        result = self._search(
+            [
+                {
+                    "score": 0.6,
+                    "content": {"text": "texto B"},
+                    "location": {"type": "S3", "s3Location": {"uri": "s3://kb/b.pdf"}},
+                },
+                {
+                    "score": 0.9,
+                    "content": {"text": "texto A"},
+                    "location": {"type": "WEB", "webLocation": {"url": "https://x.com/a"}},
+                },
+            ]
+        )
+
+        sources = kb_sources(result["content"])
+
+        assert sources == [
+            {"kb_id": "docs", "score": 0.9, "type": "WEB", "uri": "https://x.com/a"},
+            {"kb_id": "docs", "score": 0.6, "type": "S3", "uri": "s3://kb/b.pdf"},
+        ]
+        assert "texto" not in json.dumps(sources)
+
+    def test_varias_kbs(self):
+        result = self._search(
+            [_hit(0.9, "A")], [_hit(0.8, "C")], kb_ids=["docs", "tickets"], top_k=5
+        )
+
+        assert [s["kb_id"] for s in kb_sources(result["content"])] == ["docs", "tickets"]
+
+    @pytest.mark.parametrize(
+        ("location", "uri"),
+        [
+            ({"type": "CONFLUENCE", "confluenceLocation": {"url": "https://c/x"}}, "https://c/x"),
+            ({"type": "KENDRA", "kendraDocumentLocation": {"uri": "k://d"}}, "k://d"),
+            ({"type": "CUSTOM", "customDocumentLocation": {"id": "doc-7"}}, "doc-7"),
+            ({"type": "SQL", "sqlLocation": {"query": "SELECT 1"}}, None),
+            ({"type": "S3"}, None),
+            (None, None),
+        ],
+    )
+    def test_uri_segun_el_tipo_de_location(self, location, uri):
+        result = self._search([{"score": 0.9, "content": {"text": "x"}, "location": location}])
+
+        (source,) = kb_sources(result["content"])
+
+        assert source["uri"] == uri
+
+    def test_sin_pasajes_es_lista_vacia(self):
+        assert kb_sources(self._search([])["content"]) == []
+
+    def test_error_de_la_tool_es_lista_vacia(self):
+        with patch("boto3.client"):
+            tool = make_kb(kb_ids=["docs"])
+
+        assert kb_sources(tool(query="q", kb_id="nope")["content"]) == []
+
+    @pytest.mark.parametrize(
+        "content",
+        [
+            None,
+            [],
+            [{"json": {"passages": []}}],
+            [{"text": "otra tool"}],
+            [{"text": "resumen\nno es json"}],
+            [{"text": "resumen\n[1, 2]"}],
+            ["no es un bloque"],
+        ],
+    )
+    def test_contenido_ajeno_no_rompe(self, content):
+        assert kb_sources(content) == []
 
 
 # ---------------------------------------------------------------------------

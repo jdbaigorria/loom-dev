@@ -26,7 +26,7 @@ from collections.abc import Callable
 from loom.adapters.strands import DecoratedFunctionTool
 
 from .apicall import make_apicall
-from .kb import make_kb
+from .kb import kb_sources, make_kb
 
 BuiltinFactory = Callable[..., "DecoratedFunctionTool | list[DecoratedFunctionTool]"]
 
@@ -36,4 +36,4 @@ BUILTIN_TOOLS: dict[str, BuiltinFactory] = {
     "apicall": make_apicall,
 }
 
-__all__ = ["BUILTIN_TOOLS", "BuiltinFactory", "make_apicall", "make_kb"]
+__all__ = ["BUILTIN_TOOLS", "BuiltinFactory", "kb_sources", "make_apicall", "make_kb"]

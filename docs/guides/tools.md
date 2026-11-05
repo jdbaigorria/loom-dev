@@ -143,6 +143,17 @@ tools:
 
 The model calls it with a `query` and may optionally pass `kb_id` to target a single knowledge base; omitting it searches all of them.
 
+To record which documents a search returned, without storing the passages themselves, read the tool result back with `kb_sources`. It takes the result's `content` blocks and gives one entry per passage, highest score first:
+
+```python
+from loom.builtins import kb_sources
+
+kb_sources(tool_result["content"])
+# [{"kb_id": "docs", "score": 0.83, "type": "S3", "uri": "s3://bucket/guide.pdf"}]
+```
+
+`uri` is the document's `uri`, `url` or `id` from its Bedrock `location`. A result with no passages, an error, or content from another tool gives `[]`, so it is safe to apply to every tool call of a turn. These are the documents the search **returned** to the model, not the ones the answer relied on.
+
 A `bedrock_kb` entry under `memory` is a different object: it injects matches before the turn and can write when `writable` is true. `builtin.kb` runs only when the model calls it. See [Memory, context, and control](memory-context-control.md).
 
 ### `builtin.apicall` — HTTP tool
