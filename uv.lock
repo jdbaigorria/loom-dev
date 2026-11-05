@@ -1055,7 +1055,7 @@ wheels = [
 
 [[package]]
 name = "loom-declarative"
-version = "1.0.0rc9"
+version = "1.0.0rc10"
 source = { editable = "." }
 dependencies = [
     { name = "omegaconf" },
@@ -1139,7 +1139,7 @@ docs = [
 
 [[package]]
 name = "loom-declarative-evals"
-version = "1.0.0rc9"
+version = "1.0.0rc10"
 source = { editable = "packages/loom-evals" }
 dependencies = [
     { name = "loom-declarative", extra = ["cli"] },
