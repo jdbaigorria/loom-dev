@@ -189,7 +189,8 @@ def kb_sources(content: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
 
 
 def _source(passage: dict[str, Any]) -> dict[str, Any]:
-    location = passage.get("location") if isinstance(passage.get("location"), dict) else {}
+    raw = passage.get("location")
+    location: dict[str, Any] = raw if isinstance(raw, dict) else {}
     return {
         "kb_id": passage.get("kb_id"),
         "score": passage.get("score"),
@@ -202,6 +203,7 @@ def _uri(location: dict[str, Any]) -> str | None:
     for key, value in location.items():
         if key.endswith("Location") and isinstance(value, dict):
             for field in ("uri", "url", "id"):
-                if isinstance(value.get(field), str):
-                    return value[field]
+                found = value.get(field)
+                if isinstance(found, str):
+                    return found
     return None
