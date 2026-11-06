@@ -1,7 +1,7 @@
 """L2 — ``TurnMetrics``: typed per-turn projection of Strands' metrics summary.
 
-The fixture mirrors a real Bedrock ``get_summary()`` (Strands 1.62, agent ``sample-agent``) with
-the message content replaced by block names: only the structure and the numbers matter.
+The fixture mirrors a real Bedrock ``get_summary()`` (Strands 1.62) with the message
+content replaced by block names: only the structure and the numbers matter.
 """
 
 import pytest
